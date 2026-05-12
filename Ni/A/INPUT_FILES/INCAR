@@ -1,0 +1,27 @@
+SYSTEM = fcc Ni relaxation
+
+ISTART = 0
+
+# General accuracy
+# PREC   = Accurate
+ENCUT  = 270
+EDIFF  = 1E-7
+
+# Spin-polarized ferromagnetic Ni
+ISPIN  = 2
+MAGMOM = 2 2
+
+# Ionic relaxation
+IBRION = -1
+NSW    = 0
+
+LORBIT = 11
+NELM   = 200
+
+# Metallic smearing for relaxation
+ISMEAR = 1
+SIGMA  = 0.10
+
+# Output control
+LWAVE  = .FALSE.
+LCHARG = .FALSE.

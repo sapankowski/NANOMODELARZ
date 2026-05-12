@@ -1,0 +1,24 @@
+SYSTEM = fcc Ni FM static convergence
+
+ISTART = 0
+ICHARG = 2
+
+PREC   = Accurate
+ENCUT  = 470
+EDIFF  = 1E-7
+NELM   = 200
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+
+ISPIN  = 2
+MAGMOM = 4*0.6
+
+IBRION = -1
+NSW    = 0
+
+ISMEAR = 1
+SIGMA  = 0.10
+
+LORBIT = 11
+LWAVE  = .FALSE.
+LCHARG = .FALSE.

@@ -1,0 +1,26 @@
+SYSTEM = rocksalt NiO AFM static convergence
+
+ISTART = 0
+ICHARG = 2
+
+PREC   = Accurate
+ENCUT  = 450
+EDIFF  = 1E-7
+NELM   = 200
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+LMAXMIX = 4
+
+ISPIN  = 2
+# AFM order in the current conventional cell: opposite moments on z=0 and z=1/2 Ni sites.
+MAGMOM = 2.0 -2.0 -2.0 2.0 4*0.0
+
+IBRION = -1
+NSW    = 0
+
+ISMEAR = 0
+SIGMA  = 0.05
+
+LORBIT = 11
+LWAVE  = .FALSE.
+LCHARG = .FALSE.
