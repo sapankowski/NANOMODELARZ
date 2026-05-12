@@ -1,0 +1,4 @@
+| System | ENCUT, eV | k-point mesh | Energy convergence |
+| --- | --- | --- | --- |
+| Ni | pending | pending | pending VASP outputs |
+| NiO | pending | pending | pending VASP outputs |
