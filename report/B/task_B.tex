@@ -1,1 +1,151 @@
+\subsection{Purpose}
 
+The purpose of Task B was to use the converged numerical settings from Task A
+to compare structural, energetic, and magnetic properties of Ni and NiO.  For
+each solid-state case, a full cell relaxation was followed by a static
+single-point calculation on the relaxed structure.  The reported energies,
+magnetic moments, stresses, and lattice parameters were extracted from the
+static calculations.
+
+\subsection{Computational Setup and Assumptions}
+
+The Task B calculations used the conservative converged settings selected after
+Task A.  For Ni, the calculations used \texttt{ENCUT = 520 eV} and a
+\(24\times24\times24\) Gamma-centered k-point mesh.  For NiO, the calculations
+used \texttt{ENCUT = 700 eV} and a \(16\times16\times16\) Gamma-centered
+k-point mesh.
+
+Two Ni magnetic states were considered:
+\begin{itemize}
+  \item non-magnetic PBE, with \texttt{ISPIN = 1};
+  \item ferromagnetic PBE, with \texttt{ISPIN = 2} and
+  \texttt{MAGMOM = 4*0.6}.
+\end{itemize}
+This tests whether the calculation recovers the expected ferromagnetic ground
+state of elemental Ni.
+
+For NiO, four cases were considered:
+\begin{itemize}
+  \item PBE ferromagnetic;
+  \item PBE AFM-II;
+  \item DFT+\(U\) ferromagnetic;
+  \item DFT+\(U\) AFM-II.
+\end{itemize}
+The AFM-II setup used opposite initial moments on the two Ni atoms,
+\[
+  \texttt{MAGMOM = 2.0 -2.0 2*0.0},
+\]
+while the ferromagnetic setup used
+\[
+  \texttt{MAGMOM = 2*2.0 2*0.0}.
+\]
+The DFT+\(U\) calculations used the same Dudarev setup as in Task A:
+\texttt{LDAUTYPE = 2}, \texttt{LDAUL = 2 -1},
+\texttt{LDAUU = 7.2 0.0}, and \texttt{LDAUJ = 1.0 0.0}.  Thus the effective
+correction on Ni \(3d\) orbitals was
+\[
+  U_{\mathrm{eff}} = U - J = 6.2~\mathrm{eV}.
+\]
+No Hubbard correction was applied to oxygen.
+
+The relaxation calculations used \texttt{IBRION = 2}, \texttt{ISIF = 3},
+\texttt{NSW = 120}, and \texttt{EDIFFG = -0.02 eV/A}, allowing both ionic
+positions and cell shape/volume to relax.  Static calculations then used
+\texttt{IBRION = -1}, \texttt{NSW = 0}, and \texttt{ISIF = 2}.  Metallic Ni
+relaxations used \texttt{ISMEAR = 1} and \texttt{SIGMA = 0.10}.  The final
+static calculations used \texttt{ISMEAR = -5}.
+
+\subsection{Results}
+
+\begin{table}[h]
+\centering
+\caption{Task B relaxed structures and total energies.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrr}
+\toprule
+System & Method/order & \(a\) (\AA) & \(b\) (\AA) & \(c\) (\AA) &
+\(\alpha=\beta=\gamma\) (deg) & \(E_{\mathrm{total}}\) (eV) & Pressure (kB) \\
+\midrule
+Ni  & PBE NM        & 3.5107 & 3.5107 & 3.5107 & 90.000 & -21.647642 &  0.416 \\
+Ni  & PBE FM        & 3.5180 & 3.5180 & 3.5180 & 90.000 & -21.881317 &  0.453 \\
+NiO & PBE FM        & 5.1576 & 5.1576 & 5.1576 & 33.560 & -22.966480 & -3.354 \\
+NiO & PBE AFM-II    & 5.1281 & 5.1281 & 5.1281 & 33.620 & -23.495908 &  3.010 \\
+NiO & DFT+\(U\) FM     & 5.1383 & 5.1383 & 5.1383 & 33.557 & -20.343218 &  0.041 \\
+NiO & DFT+\(U\) AFM-II & 5.1194 & 5.1194 & 5.1194 & 33.568 & -20.490702 &  0.016 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Task B magnetic moments and cohesive energies.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrll}
+\toprule
+System & Method/order & Total moment (\(\mu_B\)) & Local moments (\(\mu_B\)) & Cohesive energy (eV) \\
+\midrule
+Ni  & PBE NM        & --      & --                         & 4.778453 \\
+Ni  & PBE FM        & 2.5040  & 0.638, 0.638, 0.638, 0.638 & 4.836872 \\
+NiO & PBE FM        & 3.6109  & 1.479, 1.479, 0.280, 0.280 & pending \\
+NiO & PBE AFM-II    & 0.0000  & 1.350, -1.350, 0.000, 0.000 & pending \\
+NiO & DFT+\(U\) FM     & 4.0000  & 1.825, 1.825, 0.169, 0.169 & pending \\
+NiO & DFT+\(U\) AFM-II & 0.0000  & 1.748, -1.748, 0.000, 0.000 & pending \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The Ni results show that the ferromagnetic state is lower in energy than the
+non-magnetic state by
+\[
+  -21.881317 - (-21.647642) = -0.233675~\mathrm{eV}
+\]
+per four-atom cell, or approximately \(58.4~\mathrm{meV}\) per Ni atom.  This
+confirms that the ferromagnetic phase is the stable magnetic solution among the
+two Ni states tested here.
+
+For NiO, AFM-II is lower in energy than the ferromagnetic state for both PBE
+and DFT+\(U\).  In PBE, the energy lowering is
+\[
+  -23.495908 - (-22.966480) = -0.529428~\mathrm{eV}
+\]
+per two-NiO cell, or \(264.7~\mathrm{meV}\) per NiO formula unit.  With
+DFT+\(U\), the energy lowering is
+\[
+  -20.490702 - (-20.343218) = -0.147484~\mathrm{eV}
+\]
+per two-NiO cell, or \(73.7~\mathrm{meV}\) per NiO formula unit.  Therefore,
+among the magnetic states tested in this project, AFM-II is the most stable
+ordering of NiO.
+
+\subsection{Cohesive Energy}
+
+The cohesive energy was evaluated as
+\[
+  E_{\mathrm{coh}} =
+  \frac{n_{\mathrm{Ni}}E_{\mathrm{Ni,atom}} +
+        n_{\mathrm{O}}E_{\mathrm{O,atom}} -
+        E_{\mathrm{solid}}}{n_{\mathrm{Ni}}},
+\]
+where the denominator is the number of Ni atoms.  For pure Ni this is the usual
+cohesive energy per Ni atom.  The isolated Ni atom calculation finished, so the
+Ni cohesive energies are available.  The ferromagnetic Ni cohesive energy is
+\(4.836872~\mathrm{eV}\), slightly larger than the non-magnetic value
+\(4.778453~\mathrm{eV}\), consistent with ferromagnetic Ni being more stable.
+
+The isolated O atom calculation did not produce a complete final electronic
+energy in its \texttt{OUTCAR}; only the header was present.  Therefore the NiO
+cohesive energies are marked as pending in the result table.  They should not
+be interpreted until the isolated oxygen reference calculation is completed and
+the Task B table is regenerated.
+
+\subsection{Discussion}
+
+The Task B results are physically consistent.  Elemental Ni relaxes to a
+ferromagnetic solution with a finite moment of about \(0.638~\mu_B\) per atom.
+For NiO, the AFM-II states have nearly zero total magnetic moment because the
+two Ni local moments cancel.  The DFT+\(U\) AFM-II calculation gives larger
+local Ni moments, about \(1.748~\mu_B\), than the PBE AFM-II calculation,
+about \(1.350~\mu_B\).  This is expected because the Hubbard correction
+localizes the Ni \(3d\) electrons more strongly.
