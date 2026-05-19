@@ -13,7 +13,9 @@ The Task B calculations used the conservative converged settings selected after
 Task A.  For Ni, the calculations used \texttt{ENCUT = 520 eV} and a
 \(24\times24\times24\) Gamma-centered k-point mesh.  For NiO, the calculations
 used \texttt{ENCUT = 700 eV} and a \(16\times16\times16\) Gamma-centered
-k-point mesh.
+k-point mesh.  These choices are consistent with the convergence requirements
+for plane-wave cutoff and Brillouin-zone sampling discussed in the VASP
+documentation \cite{vasp-encut,vasp-kpoints}.
 
 Two Ni magnetic states were considered:
 \begin{itemize}
@@ -39,6 +41,9 @@ while the ferromagnetic setup used
 \[
   \texttt{MAGMOM = 2*2.0 2*0.0}.
 \]
+The AFM-II ordering was chosen because it is the standard low-energy magnetic
+ordering for rocksalt NiO and is used in VASP's NiO magnetic-structure
+tutorial \cite{vasp-nio-magnetism}.
 The DFT+\(U\) calculations used the same Dudarev setup as in Task A:
 \texttt{LDAUTYPE = 2}, \texttt{LDAUL = 2 -1},
 \texttt{LDAUU = 7.2 0.0}, and \texttt{LDAUJ = 1.0 0.0}.  Thus the effective
@@ -46,14 +51,24 @@ correction on Ni \(3d\) orbitals was
 \[
   U_{\mathrm{eff}} = U - J = 6.2~\mathrm{eV}.
 \]
-No Hubbard correction was applied to oxygen.
+No Hubbard correction was applied to oxygen.  In this formulation only
+\(U_{\mathrm{eff}}\) enters the correction energy, so the chosen
+\texttt{LDAUU} and \texttt{LDAUJ} values should be understood as a
+\(U_{\mathrm{eff}} = 6.2~\mathrm{eV}\) calculation rather than as independent
+physical fitting of \(U\) and \(J\) \cite{dudarev,vasp-ldautype}.  This value is
+within the range commonly used for NiO DFT+\(U\) examples and linear-response
+estimates \cite{vasp-nio-magnetism,vasp-strong-corr}.
 
 The relaxation calculations used \texttt{IBRION = 2}, \texttt{ISIF = 3},
 \texttt{NSW = 120}, and \texttt{EDIFFG = -0.02 eV/A}, allowing both ionic
 positions and cell shape/volume to relax.  Static calculations then used
 \texttt{IBRION = -1}, \texttt{NSW = 0}, and \texttt{ISIF = 2}.  Metallic Ni
 relaxations used \texttt{ISMEAR = 1} and \texttt{SIGMA = 0.10}.  The final
-static calculations used \texttt{ISMEAR = -5}.
+static calculations used \texttt{ISMEAR = -5}.  The use of smearing for metallic
+relaxations avoids the known problem that the tetrahedron method can give
+unreliable forces and stress in metals, while the tetrahedron method is
+appropriate for final static total energies when no forces are used
+\cite{vasp-ibrion,vasp-isif,vasp-ediffg,vasp-ismear}.
 
 \subsection{Results}
 
