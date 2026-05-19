@@ -23,12 +23,10 @@
 
 This project studies bulk nickel (Ni) and nickel oxide (NiO) using periodic
 density-functional-theory calculations in VASP.  The starting crystal
-structures were taken from the Materials Project database, which provides
-first-principles crystal-structure data and material identifiers for reproducible
-computational studies \cite{materials-project}.  The Ni structure corresponds
-to the Materials Project fcc Ni entry, \texttt{mp-23}, while the NiO structure
-was based on the rocksalt NiO entry, \texttt{mp-19009}
-\cite{mp-ni,mp-nio}.
+structures were taken from the Materials Project database
+\cite{materials-project}.  The Ni structure corresponds to the fcc Ni entry
+\texttt{mp-23}, while the NiO structure was based on the rocksalt NiO entry
+\texttt{mp-19009} \cite{mp-ni,mp-nio}.
 
 All calculations used periodic boundary conditions and bulk simulation cells;
 no surfaces, vacancies, defects, or finite-temperature molecular dynamics were
@@ -47,16 +45,6 @@ opposite initial magnetic moments, which allows the AFM-II ordering to be
 represented explicitly.  This magnetic setup is consistent with the VASP NiO
 magnetism tutorial and with the known AFM-II ordering of bulk NiO
 \cite{vasp-nio-magnetism}.
-
-The electronic structure was described with the PBE generalized-gradient
-approximation and PAW potentials \cite{pbe}.  Spin polarization was included
-where magnetic states were studied.  For NiO, DFT+\(U\) was used for the Ni
-\(3d\) states in the Dudarev formulation because standard semi-local DFT does
-not adequately describe the localized transition-metal \(d\) electrons in NiO
-\cite{dudarev,vasp-ldautype}.  The project is organized into two parts:
-Task A determines converged numerical parameters, and Task B uses those
-parameters to compare relaxed structures, total energies, cohesive energies,
-and magnetic states.
 
 \section{Task A}
 \input{A/task_A}
