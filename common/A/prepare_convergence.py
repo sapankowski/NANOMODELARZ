@@ -15,16 +15,18 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_DIR = ROOT / "outputs" / "A"
 
 
 SYSTEMS = {
     "Ni": {
         "task_dir": ROOT / "Ni" / "A",
-        "fixed_kmesh": 16,
-        "fixed_encut": 420,
-        "encuts": [270, 320, 370, 420, 470, 520],
-        "kmeshes": [6, 8, 10, 12, 14, 16, 18],
+        "fixed_kmesh": 24,
+        "fixed_encut": 520,
+        "encuts": [270, 300, 320, 340, 360, 380, 400, 420, 440, 460, 480, 500, 520, 560, 600],
+        "kmeshes": [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32],
         "readme_title": "Task A: Ni Convergence Tests",
+        "description": "This folder contains VASP inputs for Task A convergence tests on fcc Ni in the ferromagnetic state.",
         "incar": """\
             SYSTEM = fcc Ni FM static convergence
 
@@ -54,13 +56,14 @@ SYSTEMS = {
     },
     "NiO": {
         "task_dir": ROOT / "NiO" / "A",
-        "fixed_kmesh": 10,
-        "fixed_encut": 520,
-        "encuts": [400, 450, 500, 520, 550, 600, 650],
-        "kmeshes": [4, 6, 8, 10, 12, 14],
+        "fixed_kmesh": 16,
+        "fixed_encut": 700,
+        "encuts": [400, 425, 450, 475, 500, 520, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800],
+        "kmeshes": [4, 6, 8, 10, 12, 14, 16, 18, 20],
         "readme_title": "Task A: NiO Convergence Tests",
+        "description": "This folder contains VASP inputs for Task A convergence tests on rocksalt NiO in the AFM-II DFT+U state.",
         "incar": """\
-            SYSTEM = rocksalt NiO AFM static convergence
+            SYSTEM = rocksalt NiO AFM DFT+U static convergence
 
             ISTART = 0
             ICHARG = 2
@@ -69,19 +72,31 @@ SYSTEMS = {
             ENCUT  = {encut}
             EDIFF  = 1E-7
             NELM   = 200
+            NELMIN = 6
             LREAL  = .FALSE.
             LASPH  = .TRUE.
-            LMAXMIX = 4
 
             ISPIN  = 2
-            # AFM order in the current conventional cell: opposite moments on z=0 and z=1/2 Ni sites.
-            MAGMOM = 2.0 -2.0 -2.0 2.0 4*0.0
+            # AFM-II NiO cell: two Ni sites with opposite moments, followed by two O sites.
+            MAGMOM = 2.0 -2.0 2*0.0
+
+            LDAU      = .TRUE.
+            LDAUTYPE  = 2
+            LDAUL     = 2 -1
+            LDAUU     = 7.2 0.0
+            LDAUJ     = 1.0 0.0
+            LDAUPRINT = 1
+            LMAXMIX   = 4
+
+            AMIX      = 0.2
+            BMIX      = 0.00001
+            AMIX_MAG  = 0.8
+            BMIX_MAG  = 0.00001
 
             IBRION = -1
             NSW    = 0
 
-            ISMEAR = 0
-            SIGMA  = 0.05
+            ISMEAR = -5
 
             LORBIT = 11
             LWAVE  = .FALSE.
@@ -96,8 +111,11 @@ def clean(text: str) -> str:
 
 
 def write(path: Path, text: str) -> None:
+    content = clean(text)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(clean(text))
+    if path.exists() and path.read_text(errors="ignore") == content:
+        return
+    path.write_text(content)
 
 
 def write_kpoints(path: Path, system: str, mesh: int) -> None:
@@ -136,11 +154,13 @@ def write_readme(system: str, cfg: dict) -> None:
         f"""\
         # {cfg["readme_title"]}
 
-        This folder contains VASP inputs for Task A convergence tests.
+        {cfg["description"]}
 
         - `INPUT_FILES/`: main reference inputs for this material.
         - `ENCUT/ENCUT_*`: fixed `{cfg["fixed_kmesh"]}x{cfg["fixed_kmesh"]}x{cfg["fixed_kmesh"]}` k-point mesh, varied cutoff energy.
         - `KPOINTS/K_*`: fixed `ENCUT = {cfg["fixed_encut"]} eV`, varied Gamma-centered k-point mesh.
+        {extra_notes(system)}
+        - Shared scripts live in `../../common/A/`.
 
         Run VASP in every generated `ENCUT/*` and `KPOINTS/*` folder.
 
@@ -151,7 +171,17 @@ def write_readme(system: str, cfg: dict) -> None:
         ```
 
         The convergence criterion is 1 meV/atom relative to the most demanding tested parameter.
+        Use `outputs/A/Task_A_results_table.md` or `outputs/A/Task_A_results_table.csv` in the report.
         """,
+    )
+
+
+def extra_notes(system: str) -> str:
+    if system != "NiO":
+        return ""
+    return (
+        "- NiO uses spin-polarized antiferromagnetic DFT+U with Dudarev "
+        "`U(Ni) = 7.2 eV`, `J(Ni) = 1.0 eV`, so `Ueff = U - J = 6.2 eV`."
     )
 
 
@@ -178,6 +208,8 @@ def prepare_system(system: str, cfg: dict) -> None:
 
 
 def main() -> None:
+    (OUTPUT_DIR / "slurm").mkdir(parents=True, exist_ok=True)
+    (OUTPUT_DIR / "calculations").mkdir(parents=True, exist_ok=True)
     for system, cfg in SYSTEMS.items():
         prepare_system(system, cfg)
         print(f"Prepared {system} Task A folders in {cfg['task_dir'].relative_to(ROOT)}")

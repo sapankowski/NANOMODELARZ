@@ -4,7 +4,7 @@ ISTART = 0
 ICHARG = 2
 
 PREC   = Accurate
-ENCUT  = 420
+ENCUT  = 520
 EDIFF  = 1E-7
 NELM   = 200
 LREAL  = .FALSE.

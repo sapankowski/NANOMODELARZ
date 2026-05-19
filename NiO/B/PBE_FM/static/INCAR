@@ -1,0 +1,25 @@
+SYSTEM = NiO PBE FM relaxed static
+
+        ISTART = 0
+        ICHARG = 2
+
+        PREC   = Accurate
+        ENCUT  = 700
+        EDIFF  = 1E-7
+        NELM   = 200
+        LREAL  = .FALSE.
+        LASPH  = .TRUE.
+        ADDGRID = .TRUE.
+
+        ISPIN  = 2
+MAGMOM = 2*2.0 2*0.0
+
+        IBRION = -1
+        NSW    = 0
+        ISIF   = 2
+
+        ISMEAR = -5
+
+        LORBIT = 11
+        LWAVE  = .FALSE.
+        LCHARG = .FALSE.

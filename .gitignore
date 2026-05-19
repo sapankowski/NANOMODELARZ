@@ -1,3 +1,42 @@
+.DS_Store
 **/.DS_Store
 
-./Project-description-2026.pdf
+# Local project handout / generated PDFs
+Project-description-2026.pdf
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Slurm logs
+slurm/
+outputs/*/slurm/
+*.out
+*.err
+
+# Raw VASP calculation work directories mirrored under outputs/
+outputs/*/calculations/
+
+# VASP runtime/intermediate/result files
+CHG
+CHGCAR
+CONTCAR
+DOSCAR
+EIGENVAL
+IBZKPT
+OSZICAR
+OUTCAR
+PCDAT
+PROCAR
+REPORT
+WAVECAR
+XDATCAR
+vasp.out
+vaspout.h5
+vasprun.xml
+
+# Generated Task A/B summaries can be regenerated from scripts.
+outputs/A/Task_A_*
+outputs/B/reports/Task_B_results_table.*
+outputs/B/structures/*.xyz
