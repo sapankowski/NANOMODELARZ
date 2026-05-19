@@ -19,6 +19,45 @@
 \tableofcontents
 \newpage
 
+\section{Introduction}
+
+This project studies bulk nickel (Ni) and nickel oxide (NiO) using periodic
+density-functional-theory calculations in VASP.  The starting crystal
+structures were taken from the Materials Project database, which provides
+first-principles crystal-structure data and material identifiers for reproducible
+computational studies \cite{materials-project}.  The Ni structure corresponds
+to the Materials Project fcc Ni entry, \texttt{mp-23}, while the NiO structure
+was based on the rocksalt NiO entry, \texttt{mp-19009}
+\cite{mp-ni,mp-nio}.
+
+All calculations used periodic boundary conditions and bulk simulation cells;
+no surfaces, vacancies, defects, or finite-temperature molecular dynamics were
+included.  For Ni, the simulation cell was the conventional fcc cubic cell with
+four Ni atoms.  The starting lattice parameter was approximately
+\(a = 3.475~\mathrm{\AA}\), and the fractional atomic positions were
+\((0,0,0)\), \((0,\frac{1}{2},\frac{1}{2})\),
+\((\frac{1}{2},0,\frac{1}{2})\), and
+\((\frac{1}{2},\frac{1}{2},0)\).
+
+For NiO, the underlying crystal structure was rocksalt.  Because NiO is
+antiferromagnetic, we used a magnetic AFM-II cell rather than the smallest
+non-magnetic rocksalt primitive cell.  The cell contains two Ni atoms and two O
+atoms.  The two Ni atoms are placed on alternating \([111]\) planes and assigned
+opposite initial magnetic moments, which allows the AFM-II ordering to be
+represented explicitly.  This magnetic setup is consistent with the VASP NiO
+magnetism tutorial and with the known AFM-II ordering of bulk NiO
+\cite{vasp-nio-magnetism}.
+
+The electronic structure was described with the PBE generalized-gradient
+approximation and PAW potentials \cite{pbe}.  Spin polarization was included
+where magnetic states were studied.  For NiO, DFT+\(U\) was used for the Ni
+\(3d\) states in the Dudarev formulation because standard semi-local DFT does
+not adequately describe the localized transition-metal \(d\) electrons in NiO
+\cite{dudarev,vasp-ldautype}.  The project is organized into two parts:
+Task A determines converged numerical parameters, and Task B uses those
+parameters to compare relaxed structures, total energies, cohesive energies,
+and magnetic states.
+
 \section{Task A}
 \input{A/task_A}
 
@@ -27,6 +66,21 @@
 
 \newpage
 \begin{thebibliography}{99}
+
+\bibitem{materials-project}
+A. Jain, S. P. Ong, G. Hautier, W. Chen, W. D. Richards, S. Dacek,
+S. Cholia, D. Gunter, D. Skinner, G. Ceder, and K. A. Persson,
+\emph{Commentary: The Materials Project: A materials genome approach to
+accelerating materials innovation}, APL Materials \textbf{1}, 011002 (2013).
+\url{https://doi.org/10.1063/1.4812323}
+
+\bibitem{mp-ni}
+Materials Project, \emph{Ni (mp-23)}.
+\url{https://materialsproject.org/materials/mp-23}
+
+\bibitem{mp-nio}
+Materials Project, \emph{NiO (mp-19009)}.
+\url{https://materialsproject.org/materials/mp-19009}
 
 \bibitem{vasp-encut}
 VASP Wiki, \emph{ENCUT}.
