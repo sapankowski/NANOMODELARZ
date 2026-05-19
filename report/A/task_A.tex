@@ -77,6 +77,24 @@ working input files kept conservative settings: \texttt{ENCUT = 520 eV} and
 minimum converged values, but they reduce the risk of numerical noise in later
 energy differences.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/task_A_ENCUT_convergence.pdf}
+\caption{\texttt{ENCUT} convergence for Ni and NiO.  The plotted values are
+final total energies per atom extracted from the raw VASP \texttt{OUTCAR}
+files.}
+\label{fig:task-a-encut}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/task_A_KPOINTS_convergence.pdf}
+\caption{k-point convergence for Ni and NiO.  The non-monotonic but small
+oscillations in the Ni curve are consistent with metallic Brillouin-zone
+sampling.}
+\label{fig:task-a-kpoints}
+\end{figure}
+
 \subsection{Raw Convergence Data}
 
 \begin{table}[h]
