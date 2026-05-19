@@ -1,0 +1,202 @@
+\subsection{Purpose}
+
+The goal of Task A was to determine numerically converged settings for bulk
+fcc Ni and rocksalt NiO before using them in later calculations.  Two numerical
+parameters were varied independently: the plane-wave cutoff energy, \texttt{ENCUT},
+and the regular Gamma-centered k-point mesh used for Brillouin-zone sampling
+\cite{vasp-encut,vasp-kpoints,monkhorst-pack}.
+For each run, the total electronic energy was extracted from the final
+self-consistent step of the VASP \texttt{OUTCAR}.  Energies below are reported
+per atom.
+
+\subsection{Computational Setup and Assumptions}
+
+The Ni calculations were performed for ferromagnetic fcc Ni using spin
+polarization with \texttt{ISPIN = 2} and an initial moment
+\texttt{MAGMOM = 4*0.6}.  This magnetic phase was chosen because elemental bulk
+Ni is ferromagnetic, and the Task B comparison in this project found the
+ferromagnetic solution to be lower in energy than the non-magnetic one.
+
+The NiO calculations were performed for rocksalt NiO in the AFM-II magnetic
+ordering, represented by two Ni sites with opposite initial moments and two O
+sites with zero initial moment:
+\[
+  \texttt{MAGMOM = 2.0 -2.0 2*0.0}.
+\]
+This is the standard antiferromagnetic ordering of bulk NiO, with alternating
+spin orientation along the rocksalt \([111]\) direction
+\cite{vasp-nio-magnetism}.  NiO was treated with DFT+\(U\) because semi-local
+PBE/GGA DFT \cite{pbe} does not describe the localized Ni \(3d\) states well.
+The chosen VASP setup used the Dudarev form \cite{dudarev,vasp-ldautype},
+\texttt{LDAUTYPE = 2}, with
+\[
+  U_{\mathrm{Ni}} = 7.2~\mathrm{eV}, \qquad
+  J_{\mathrm{Ni}} = 1.0~\mathrm{eV},
+\]
+on Ni \(d\) orbitals and no correction on O.  In the Dudarev formulation the
+energy depends on \(U_{\mathrm{eff}} = U - J\), so this corresponds to
+\[
+  U_{\mathrm{eff}} = 6.2~\mathrm{eV}.
+\]
+The use of \texttt{LDAUL = 2 -1}, \texttt{LDAUU = 7.2 0.0}, and
+\texttt{LDAUJ = 1.0 0.0} therefore means that the Hubbard correction is applied
+only to the Ni \(3d\) subspace.
+
+All Task A calculations were static electronic calculations
+(\texttt{IBRION = -1}, \texttt{NSW = 0}).  Ni used
+\texttt{ISMEAR = 1} and \texttt{SIGMA = 0.10}, which is appropriate for a
+metallic system.  NiO used \texttt{ISMEAR = -5}, the tetrahedron method with
+Blochl corrections, which is suitable for accurate total energies in an
+insulator when using a Gamma-centered mesh \cite{vasp-ismear}.
+
+\subsection{Convergence Criterion}
+
+The convergence criterion used here was \(1~\mathrm{meV/atom}\) relative to the
+most demanding tested value in each scan.  This is a practical numerical
+criterion: once all later points in the scan remain within this tolerance, the
+parameter is considered converged for total-energy comparisons at the accuracy
+needed in this project.
+
+\begin{table}[h]
+\centering
+\caption{Task A convergence choices from the raw \texttt{OUTCAR} energies.}
+\begin{tabular}{lccc}
+\toprule
+System & Converged \texttt{ENCUT} & Converged k-point mesh & Max residual error \\
+\midrule
+Ni  & \SI{420}{eV} & \(8\times8\times8\)   & \SI{0.883}{meV/atom} \\
+NiO & \SI{675}{eV} & \(6\times6\times6\)   & \SI{0.937}{meV/atom} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Although the formal convergence criterion gives the values in the table, the
+working input files kept conservative settings: \texttt{ENCUT = 520 eV} and
+\(24\times24\times24\) for Ni, and \texttt{ENCUT = 700 eV} and
+\(16\times16\times16\) for NiO.  These choices are more expensive than the
+minimum converged values, but they reduce the risk of numerical noise in later
+energy differences.
+
+\subsection{Raw Convergence Data}
+
+\begin{table}[h]
+\centering
+\caption{\texttt{ENCUT} convergence. Energies are final total energies per atom.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{rcc|rcc}
+\toprule
+\multicolumn{3}{c|}{Ni} & \multicolumn{3}{c}{NiO} \\
+\texttt{ENCUT} (eV) & \(E\) (eV/atom) & \(\Delta E\) (meV/atom) &
+\texttt{ENCUT} (eV) & \(E\) (eV/atom) & \(\Delta E\) (meV/atom) \\
+\midrule
+270 & -5.458484 &  2.268 & 400 & -5.123585 & -0.352 \\
+300 & -5.471536 & -10.784 & 425 & -5.121134 &  2.098 \\
+320 & -5.471599 & -10.846 & 450 & -5.120517 &  2.716 \\
+340 & -5.468962 & -8.209 & 475 & -5.119938 &  3.295 \\
+360 & -5.465643 & -4.891 & 500 & -5.119608 &  3.625 \\
+380 & -5.463281 & -2.529 & 520 & -5.119673 &  3.559 \\
+400 & -5.462036 & -1.283 & 550 & -5.119928 &  3.305 \\
+420 & -5.461312 & -0.559 & 575 & -5.120391 &  2.841 \\
+440 & -5.460888 & -0.136 & 600 & -5.120862 &  2.370 \\
+460 & -5.460983 & -0.231 & 625 & -5.121338 &  1.895 \\
+480 & -5.460960 & -0.207 & 650 & -5.121835 &  1.398 \\
+500 & -5.461019 & -0.267 & 675 & -5.122295 &  0.937 \\
+520 & -5.461048 & -0.296 & 700 & -5.122688 &  0.545 \\
+560 & -5.460919 & -0.166 & 725 & -5.122895 &  0.338 \\
+600 & -5.460752 &  0.000 & 750 & -5.123033 &  0.200 \\
+    &           &        & 775 & -5.123182 &  0.050 \\
+    &           &        & 800 & -5.123233 &  0.000 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{k-point convergence. Energies are final total energies per atom.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{rcc|rcc}
+\toprule
+\multicolumn{3}{c|}{Ni} & \multicolumn{3}{c}{NiO} \\
+Mesh & \(E\) (eV/atom) & \(\Delta E\) (meV/atom) &
+Mesh & \(E\) (eV/atom) & \(\Delta E\) (meV/atom) \\
+\midrule
+\(8^3\)  & -5.460364 &  0.681 & \(4^3\)  & -5.120281 & 2.411 \\
+\(10^3\) & -5.461658 & -0.613 & \(6^3\)  & -5.122546 & 0.146 \\
+\(12^3\) & -5.460162 &  0.883 & \(8^3\)  & -5.122677 & 0.014 \\
+\(14^3\) & -5.461126 & -0.081 & \(10^3\) & -5.122690 & 0.001 \\
+\(16^3\) & -5.461353 & -0.308 & \(12^3\) & -5.122691 & 0.001 \\
+\(18^3\) & -5.461040 &  0.005 & \(14^3\) & -5.122691 & 0.001 \\
+\(20^3\) & -5.461050 & -0.006 & \(16^3\) & -5.122688 & 0.004 \\
+\(22^3\) & -5.461154 & -0.110 & \(18^3\) & -5.122689 & 0.003 \\
+\(24^3\) & -5.461048 & -0.003 & \(20^3\) & -5.122692 & 0.000 \\
+\(26^3\) & -5.461050 & -0.006 &          &           &       \\
+\(28^3\) & -5.461108 & -0.063 &          &           &       \\
+\(30^3\) & -5.461052 & -0.007 &          &           &       \\
+\(32^3\) & -5.461045 &  0.000 &          &           &       \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Discussion}
+
+The Ni k-point data are not strictly monotonic.  This is expected for a metal:
+the total energy depends sensitively on how the mesh samples states near the
+Fermi surface, and finite smearing does not force a smooth monotonic sequence.
+The important observation is that the oscillations are small, below
+\(1~\mathrm{meV/atom}\) over the tested range.  The conservative
+\(24\times24\times24\) mesh used for later calculations is therefore justified.
+
+For NiO, the k-point convergence is smoother.  The energy changes by only about
+\(0.15~\mathrm{meV/atom}\) between \(6\times6\times6\) and the final
+\(20\times20\times20\) reference.  The \texttt{ENCUT} scan is slower, which is
+why the final input uses \texttt{ENCUT = 700 eV}, close to the point where the
+remaining error has dropped below \(1~\mathrm{meV/atom}\).  The non-monotonic
+behavior at low cutoff values is not by itself a problem: a plane-wave basis
+changes discretely as \texttt{ENCUT} is varied, and PAW total energies often
+show small oscillations before reaching the asymptotic convergence region.
+
+\subsection{References}
+
+\begin{thebibliography}{9}
+
+\bibitem{vasp-encut}
+VASP Wiki, \emph{ENCUT}.
+\url{https://www.vasp.at/wiki/ENCUT}
+
+\bibitem{vasp-kpoints}
+VASP Wiki, \emph{KPOINTS}.
+\url{https://www.vasp.at/wiki/index.php/KPOINTS}
+
+\bibitem{vasp-ismear}
+VASP Wiki, \emph{ISMEAR} and \emph{Smearing technique}.
+\url{https://www.vasp.at/wiki/index.php/ISMEAR}
+
+\bibitem{vasp-ldautype}
+VASP Wiki, \emph{LDAUTYPE}.
+\url{https://www.vasp.at/wiki/index.php/LDAUTYPE}
+
+\bibitem{vasp-nio-magnetism}
+VASP Tutorial, \emph{Energy differences comparing collinear magnetic structures}.
+\url{https://www.vasp.at/tutorials/latest/magnetism/part2/}
+
+\bibitem{pbe}
+J. P. Perdew, K. Burke, and M. Ernzerhof,
+\emph{Generalized Gradient Approximation Made Simple},
+Phys. Rev. Lett. \textbf{77}, 3865 (1996).
+\url{https://doi.org/10.1103/PhysRevLett.77.3865}
+
+\bibitem{dudarev}
+S. L. Dudarev, G. A. Botton, S. Y. Savrasov, C. J. Humphreys, and A. P. Sutton,
+\emph{Electron-energy-loss spectra and the structural stability of nickel oxide:
+An LSDA+U study}, Phys. Rev. B \textbf{57}, 1505 (1998).
+\url{https://doi.org/10.1103/PhysRevB.57.1505}
+
+\bibitem{monkhorst-pack}
+H. J. Monkhorst and J. D. Pack,
+\emph{Special points for Brillouin-zone integrations},
+Phys. Rev. B \textbf{13}, 5188 (1976).
+\url{https://doi.org/10.1103/PhysRevB.13.5188}
+
+\end{thebibliography}
