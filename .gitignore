@@ -42,3 +42,4 @@ vasprun.xml
 outputs/A/Task_A_*
 outputs/B/reports/Task_B_results_table.*
 outputs/B/structures/*.xyz
+outputs/C
