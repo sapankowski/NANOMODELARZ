@@ -1,5 +1,7 @@
 .DS_Store
 **/.DS_Store
+.codex
+.agents
 
 # Local project handout / generated PDFs
 Project-description-2026.pdf
