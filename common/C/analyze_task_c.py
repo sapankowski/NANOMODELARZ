@@ -318,6 +318,7 @@ def svg_header(width: int, height: int, title: str) -> list[str]:
         ".tick { font-size: 11px; fill: #444; }",
         ".axis { stroke: #333; stroke-width: 1.2; fill: none; }",
         ".grid { stroke: #d4d4d4; stroke-dasharray: 2 4; stroke-width: 1; }",
+        ".kline { stroke: #777; stroke-dasharray: 4 5; stroke-width: 1; }",
         ".up { fill: none; stroke: #1f77b4; stroke-width: 1.5; }",
         ".down { fill: none; stroke: #d62728; stroke-width: 1.2; }",
         ".pdos1 { fill: none; stroke: #2ca02c; stroke-width: 1.4; }",
@@ -325,6 +326,7 @@ def svg_header(width: int, height: int, title: str) -> list[str]:
         ".pdos3 { fill: none; stroke: #ff7f0e; stroke-width: 1.4; }",
         ".legend-line { stroke-width: 2.4; stroke-linecap: round; }",
         ".legend-dot { stroke: white; stroke-width: 1; }",
+        ".legend-bg { fill: white; fill-opacity: 0.78; stroke: #bbbbbb; stroke-opacity: 0.65; stroke-width: 0.8; }",
         "</style>",
         '<rect width="100%" height="100%" fill="white"/>',
         f'<text x="{width / 2}" y="30" text-anchor="middle" class="title">{escape(title)}</text>',
@@ -350,10 +352,64 @@ def legend_dot(x: float, y: float, color: str, label: str) -> str:
     )
 
 
+def legend_background(x: float, y: float, width: float, rows: int) -> str:
+    height = 18 + max(rows, 1) * 22
+    return f'<rect x="{x}" y="{y}" width="{width}" height="{height}" rx="4" class="legend-bg"/>'
+
+
 def projection_targets(case: dict) -> list[tuple[str, str]]:
     if case["system"] == "NiO":
         return [("Ni", "d"), ("O", "p")]
     return [("Ni", "d"), ("Ni", "p")]
+
+
+def band_ticks(path: Path, distances: list[float]) -> list[tuple[float, str]]:
+    kpoints = path / "KPOINTS"
+    if not kpoints.exists() or not distances:
+        return [(0.0, "G"), (distances[-1], "")]
+
+    lines = kpoints.read_text(errors="ignore").splitlines()
+    try:
+        points_per_segment = int(lines[1].split()[0])
+    except (IndexError, ValueError):
+        points_per_segment = 40
+
+    labels = []
+    for line in lines[4:]:
+        if "!" not in line:
+            continue
+        label = line.split("!", 1)[1].strip().replace("Gamma", "G")
+        if label:
+            labels.append(label)
+
+    ticks: list[tuple[float, str]] = [(0.0, labels[0] if labels else "G")]
+    segment_count = len(labels) // 2
+    for segment_index in range(segment_count):
+        distance_index = min(segment_index * points_per_segment + points_per_segment - 1, len(distances) - 1)
+        end_label = labels[2 * segment_index + 1]
+        distance = distances[distance_index]
+        if ticks and abs(ticks[-1][0] - distance) < 1e-8:
+            if end_label and end_label not in ticks[-1][1].split("/"):
+                ticks[-1] = (ticks[-1][0], f"{ticks[-1][1]}/{end_label}" if ticks[-1][1] else end_label)
+        else:
+            ticks.append((distance, end_label))
+    return ticks
+
+
+def draw_band_ticks(
+    parts: list[str],
+    ticks: list[tuple[float, str]],
+    xmax: float,
+    left: int,
+    right: int,
+    top: int,
+    bottom: int,
+) -> None:
+    for distance, label in ticks:
+        x = scale(distance, 0, xmax, left, right)
+        parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{bottom}" class="kline"/>')
+        if label:
+            parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{escape(label)}</text>')
 
 
 def plot_dos(case: dict, dos: dict | None) -> Path | None:
@@ -376,6 +432,7 @@ def plot_dos(case: dict, dos: dict | None) -> Path | None:
     parts.append(polyline([(scale(e, -8, 8, left, right), scale(v, -ymax, ymax, bottom, top)) for e, v in zip(energies, down)], "down"))
     parts.append(f'<text x="{(left+right)/2}" y="430" text-anchor="middle" class="label">Energy - E_F (eV)</text>')
     parts.append('<text x="22" y="230" text-anchor="middle" class="label" transform="rotate(-90 22 230)">DOS (states/eV)</text>')
+    parts.append(legend_background(right - 168, top + 6, 145, 2))
     parts.append(legend_line(right - 155, top + 22, "up", "spin up"))
     parts.append(legend_line(right - 155, top + 44, "down", "spin down"))
     parts.append("</svg>")
@@ -400,6 +457,7 @@ def plot_pdos(case: dict, dos: dict | None) -> Path | None:
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
     parts.append(f'<line x1="{scale(0, -8, 8, left, right):.1f}" y1="{top}" x2="{scale(0, -8, 8, left, right):.1f}" y2="{bottom}" class="grid"/>')
     classes = ["up", "pdos1", "pdos2", "pdos3", "down"]
+    parts.append(legend_background(right - 168, top + 6, 145, len(selected)))
     for idx, (key, points) in enumerate(selected):
         visible = [(energy, density) for energy, density in points if -8.0 <= energy <= 8.0]
         parts.append(polyline([(scale(e, -8, 8, left, right), scale(v, 0, ymax, bottom, top)) for e, v in visible], classes[idx]))
@@ -423,6 +481,7 @@ def plot_bands(case: dict, data: dict | None, fermi: float | None, projected: bo
     parts = svg_header(width, height, f"{case['key']} {'projected ' if projected else ''}band structure")
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
     parts.append(f'<line x1="{left}" y1="{scale(0, ymin, ymax, bottom, top):.1f}" x2="{right}" y2="{scale(0, ymin, ymax, bottom, top):.1f}" class="grid"/>')
+    draw_band_ticks(parts, band_ticks(calc_case(case, "bands"), distances), xmax, left, right, top, bottom)
     for band in data["bands_up"]:
         shifted = [energy - fermi for energy in band]
         visible = [(x, e) for x, e in zip(distances, shifted) if ymin <= e <= ymax]
@@ -433,9 +492,12 @@ def plot_bands(case: dict, data: dict | None, fermi: float | None, projected: bo
         visible = [(x, e) for x, e in zip(distances, shifted) if ymin <= e <= ymax]
         if len(visible) > 1:
             parts.append(polyline([(scale(x, 0, xmax, left, right), scale(e, ymin, ymax, bottom, top)) for x, e in visible], "down"))
+    projections = {}
     if projected:
         projections = parse_procar_projection(calc_case(case, "bands"), projection_targets(case))
         colors = {"Ni_d": "#2ca02c", "O_p": "#ff7f0e", "Ni_p": "#9467bd"}
+        legend_rows = len(projections) + 1 + (1 if data["bands_down"] else 0)
+        parts.append(legend_background(right - 188, top + 8, 168, legend_rows))
         band_stride = max(1, len(data["bands_up"]) // 13)
         kpoint_stride = max(1, len(distances) // 80)
         for target_index, (key, weights) in enumerate(projections.items()):
@@ -456,10 +518,13 @@ def plot_bands(case: dict, data: dict | None, fermi: float | None, projected: bo
                         )
             parts.append(legend_dot(right - 175, top + 24 + target_index * 22, color, key.replace("_", " ")))
     spin_legend_y = top + (24 + 22 * len(projections) if projected else 24)
+    if not projected:
+        legend_rows = 1 + (1 if data["bands_down"] else 0)
+        parts.append(legend_background(right - 188, top + 8, 168, legend_rows))
     parts.append(legend_line(right - 175, spin_legend_y, "up", "spin up"))
     if data["bands_down"]:
         parts.append(legend_line(right - 175, spin_legend_y + 22, "down", "spin down"))
-    parts.append(f'<text x="{(left+right)/2}" y="465" text-anchor="middle" class="label">k-path distance</text>')
+    parts.append(f'<text x="{(left+right)/2}" y="465" text-anchor="middle" class="label">High-symmetry k-path</text>')
     parts.append('<text x="22" y="250" text-anchor="middle" class="label" transform="rotate(-90 22 250)">Energy - E_F (eV)</text>')
     parts.append("</svg>")
     output.write_text("\n".join(parts) + "\n")
