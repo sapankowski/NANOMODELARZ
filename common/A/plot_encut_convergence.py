@@ -9,6 +9,8 @@ Run from the project root after the VASP convergence jobs finish:
 from __future__ import annotations
 
 import argparse
+import shutil
+import subprocess
 from html import escape
 from pathlib import Path
 
@@ -17,7 +19,10 @@ try:
 except ModuleNotFoundError:
     plt = None
 
-from make_results_table import OUTPUT_DIR, ROOT, SYSTEMS, energy, kmesh, output_run_dir
+from make_results_table import OUTPUT_DIR, ROOT, SYSTEMS, energy, output_run_dir
+
+
+REPORT_FIGURE_DIR = ROOT / "report" / "figures"
 
 
 def collect_encut(system_path: Path, atoms: int) -> list[tuple[int, float]]:
@@ -34,6 +39,8 @@ def collect_encut(system_path: Path, atoms: int) -> list[tuple[int, float]]:
 
 def ibzkpt_count(run_dir: Path) -> int | None:
     ibzkpt = output_run_dir(run_dir) / "IBZKPT"
+    if not ibzkpt.exists():
+        ibzkpt = run_dir / "IBZKPT"
     if not ibzkpt.exists():
         return None
     lines = ibzkpt.read_text(errors="ignore").splitlines()
@@ -54,7 +61,7 @@ def collect_kpoints(system_path: Path, atoms: int) -> list[tuple[int, str, float
         count = ibzkpt_count(run)
         if total_energy is None or count is None:
             continue
-        points.append((count, kmesh(run), total_energy / atoms))
+        points.append((count, str(count), total_energy / atoms))
     return points
 
 
@@ -81,7 +88,7 @@ def plot_matplotlib(output_prefix: Path) -> list[Path]:
     ]
 
     for _kind, title, xlabel, collector, prefix in figures:
-        fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
+        fig, axes = plt.subplots(2, 1, figsize=(8, 9.5), constrained_layout=True)
 
         for axis, (system, cfg) in zip(axes, SYSTEMS.items()):
             points = collector(cfg)
@@ -96,8 +103,8 @@ def plot_matplotlib(output_prefix: Path) -> list[Path]:
             energies = [point[2] for point in points]
 
             axis.plot(x_values, energies, marker="o", linewidth=2.0, color="tab:blue")
-            for x, label, value in zip(x_values, labels, energies):
-                axis.annotate(label, (x, value), textcoords="offset points", xytext=(0, 7), ha="center", fontsize=8)
+            axis.set_xticks(x_values)
+            axis.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
 
             axis.set_title(f"{system}")
             axis.set_xlabel(xlabel)
@@ -107,9 +114,12 @@ def plot_matplotlib(output_prefix: Path) -> list[Path]:
         fig.suptitle(f"Task A {title}", fontsize=14)
         png = prefix.with_suffix(".png")
         pdf = prefix.with_suffix(".pdf")
+        report_pdf = REPORT_FIGURE_DIR / f"task_A_{_kind}_convergence.pdf"
+        REPORT_FIGURE_DIR.mkdir(parents=True, exist_ok=True)
         fig.savefig(png, dpi=300)
         fig.savefig(pdf)
-        outputs.extend([png, pdf])
+        fig.savefig(report_pdf)
+        outputs.extend([png, pdf, report_pdf])
     return outputs
 
 
@@ -141,14 +151,30 @@ def plot_svg(output_prefix: Path) -> list[Path]:
     return outputs
 
 
+def convert_svg_figures(figures: list[Path]) -> list[Path]:
+    converter = shutil.which("rsvg-convert")
+    if converter is None:
+        return []
+    REPORT_FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+    outputs = []
+    for figure in figures:
+        kind = "ENCUT" if "ENCUT_convergence" in figure.name else "KPOINTS"
+        pdf = REPORT_FIGURE_DIR / f"task_A_{kind}_convergence.pdf"
+        subprocess.run([converter, "-f", "pdf", "-o", str(pdf), str(figure)], check=True)
+        outputs.append(pdf)
+    return outputs
+
+
 def plot_svg_figure(output: Path, title: str, xlabel: str, collector) -> Path:
-    width = 1100
-    height = 470
-    panel_width = 470
+    width = 820
+    height = 920
+    panel_width = 650
     panel_height = 300
-    top = 95
-    left_positions = [80, 610]
-    bottom = top + panel_height
+    left = 95
+    panel_tops = [95, 510]
+    xlabel_y = 875
+    ylabel_x = 22
+    ylabel_y = height / 2
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
@@ -165,13 +191,14 @@ def plot_svg_figure(output: Path, title: str, xlabel: str, collector) -> Path:
         "</style>",
         f'<rect width="{width}" height="{height}" fill="white"/>',
         f'<text x="{width / 2}" y="35" text-anchor="middle" class="title">{escape(title)}</text>',
-        f'<text x="550" y="455" text-anchor="middle" class="label">{escape(xlabel)}</text>',
-        '<text x="20" y="245" text-anchor="middle" class="label" transform="rotate(-90 20 245)">Total energy per atom (eV/atom)</text>',
+        f'<text x="{width / 2}" y="{xlabel_y}" text-anchor="middle" class="label">{escape(xlabel)}</text>',
+        f'<text x="{ylabel_x}" y="{ylabel_y}" text-anchor="middle" class="label" transform="rotate(-90 {ylabel_x} {ylabel_y})">Total energy per atom (eV/atom)</text>',
     ]
 
-    for left, (system, cfg) in zip(left_positions, SYSTEMS.items()):
+    for top, (system, cfg) in zip(panel_tops, SYSTEMS.items()):
+        bottom = top + panel_height
         points = collector(cfg)
-        parts.append(f'<text x="{left + panel_width / 2}" y="70" text-anchor="middle" class="subtitle">{escape(system)}</text>')
+        parts.append(f'<text x="{left + panel_width / 2}" y="{top - 25}" text-anchor="middle" class="subtitle">{escape(system)}</text>')
 
         if not points:
             parts.append(f'<text x="{left + panel_width / 2}" y="{top + panel_height / 2}" text-anchor="middle" class="label">No completed runs</text>')
@@ -193,10 +220,11 @@ def plot_svg_figure(output: Path, title: str, xlabel: str, collector) -> Path:
             parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left + panel_width}" y2="{y:.1f}" class="grid"/>')
             parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{tick:.3f}</text>')
 
-        for x_value, label in zip(x_values, labels):
+        for tick_index, (x_value, label) in enumerate(zip(x_values, labels)):
             x = scale(x_value, x_min, x_max, left, left + panel_width)
             parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{bottom}" class="grid"/>')
-            parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{escape(label)}</text>')
+            label_y = bottom + 18 + (tick_index % 2) * 16
+            parts.append(f'<text x="{x:.1f}" y="{label_y}" text-anchor="middle" class="tick">{escape(label)}</text>')
 
         parts.append(f'<rect x="{left}" y="{top}" width="{panel_width}" height="{panel_height}" fill="none" class="axis"/>')
 
@@ -236,6 +264,7 @@ def main() -> None:
     outputs = plot_matplotlib(output_prefix)
     if not outputs:
         outputs = plot_svg(output_prefix)
+        outputs.extend(convert_svg_figures(outputs))
 
     print("Wrote " + " and ".join(str(output) for output in outputs))
 
