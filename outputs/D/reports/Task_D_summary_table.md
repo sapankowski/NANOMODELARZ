@@ -1,0 +1,4 @@
+| System | Case | Gamma modes found | Lowest Gamma frequency, THz | Imaginary modes | Dynamically stable? |
+| --- | --- | --- | --- | --- | --- |
+| Ni | Ni_PBE_FM | pending | pending | pending | pending |
+| NiO | NiO_DFTU_AFM | pending | pending | pending | pending |
