@@ -6,7 +6,7 @@ Prepared case:
 
 Each case contains:
 
-- `force_constants`: 2x2x2 finite-difference supercell calculation.
+- `force_constants`: 2x2x2 finite-difference primitive-cell supercell calculation.
 - `dispersion`: reads `vaspout.h5` force constants and evaluates a high-symmetry QPOINTS path.
 - `dos`: reads `vaspout.h5` force constants and evaluates a uniform q-point mesh for PhDOS.
 

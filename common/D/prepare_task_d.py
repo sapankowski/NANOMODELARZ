@@ -9,7 +9,7 @@ Run from the project root:
 from __future__ import annotations
 
 import os
-import shutil
+import re
 import textwrap
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,10 +40,13 @@ CASES = [
         "potcar": ROOT / "Ni" / "POTCAR",
         "encut": 520,
         "supercell": (2, 2, 2),
-        "kmesh": 12,
+        "kmesh": 8,
         "qmesh": 32,
         "metallic": True,
-        "spin_block": "ISPIN  = 2\nMAGMOM = 32*0.6",
+        "use_fcc_primitive": True,
+        "force_ibrion": 5,
+        "force_isym": 0,
+        "spin_block": "ISPIN  = 2\nMAGMOM = 8*0.6",
         "ldau_block": "",
         "polar": False,
         "path": [
@@ -65,18 +68,23 @@ CASES = [
         "fallback_poscar": ROOT / "NiO" / "B" / "DFTU_AFM" / "static" / "POSCAR",
         "potcar": ROOT / "NiO" / "POTCAR",
         "encut": 700,
-        "supercell": (2, 2, 2),
-        "kmesh": 8,
+        "supercell": (1, 1, 1),
+        "kmesh": 16,
         "qmesh": 32,
         "metallic": False,
-        "spin_block": "ISPIN  = 2\nMAGMOM = 8*2.0 8*-2.0 16*0.0",
+        "split_nio_magnetic_species": True,
+        "potcar_dataset_indices": [0, 0, 1],
+        "preconverge_force_constants": True,
+        "force_ibrion": 6,
+        "force_isym": 2,
+        "spin_block": "ISPIN  = 2\nMAGMOM = 2.0 -2.0 2*0.0",
         "ldau_block": """\
             LDAU      = .TRUE.
             LDAUTYPE  = 2
-            LDAUL     = 2 -1
-            LDAUU     = 7.2 0.0
-            LDAUJ     = 1.0 0.0
-            LDAUPRINT = 1
+            LDAUL     = 2 2 -1
+            LDAUU     = 7.2 7.2 0.0
+            LDAUJ     = 1.0 1.0 0.0
+            LDAUPRINT = 0
             LMAXMIX   = 4
 
             AMIX      = 0.2
@@ -116,6 +124,32 @@ def link_potcar(run_dir: Path, potcar: Path) -> None:
     if target.exists() or target.is_symlink():
         target.unlink()
     target.symlink_to(os.path.relpath(potcar, run_dir))
+
+
+def split_potcar_datasets(path: Path) -> list[str]:
+    text = path.read_text(errors="ignore")
+    parts = re.split(r"(End of Dataset\s*\n)", text)
+    datasets: list[str] = []
+    for index in range(0, len(parts) - 1, 2):
+        dataset = parts[index] + parts[index + 1]
+        if dataset.strip():
+            datasets.append(dataset)
+    if not datasets:
+        raise ValueError(f"Could not split POTCAR datasets: {path}")
+    return datasets
+
+
+def write_potcar_for_case(run_dir: Path, case: dict) -> None:
+    indices = case.get("potcar_dataset_indices")
+    if not indices:
+        link_potcar(run_dir, case["potcar"])
+        return
+    datasets = split_potcar_datasets(case["potcar"])
+    content = "".join(datasets[index] for index in indices)
+    target = run_dir / "POTCAR"
+    if target.is_symlink() or target.exists():
+        target.unlink()
+    target.write_text(content)
 
 
 def poscar_for(case: dict) -> Path:
@@ -193,6 +227,47 @@ def make_supercell(poscar: Poscar, repeat: tuple[int, int, int]) -> Poscar:
     )
 
 
+def make_fcc_primitive(poscar: Poscar) -> Poscar:
+    if len(poscar.species) != 1:
+        raise ValueError("FCC primitive conversion expects a single-species POSCAR")
+    a1, a2, a3 = poscar.lattice
+    lattice = [
+        [(a2[index] + a3[index]) * 0.5 for index in range(3)],
+        [(a1[index] + a3[index]) * 0.5 for index in range(3)],
+        [(a1[index] + a2[index]) * 0.5 for index in range(3)],
+    ]
+    return Poscar(
+        comment=f"{poscar.comment} primitive fcc cell",
+        scale=poscar.scale,
+        lattice=lattice,
+        species=poscar.species,
+        counts=[1],
+        coordinate_mode="Direct",
+        positions=[(poscar.species[0], [0.0, 0.0, 0.0])],
+    )
+
+
+def split_nio_magnetic_species(poscar: Poscar) -> Poscar:
+    if poscar.species != ["Ni", "O"] or poscar.counts != [2, 2]:
+        raise ValueError("NiO magnetic split expects species Ni O with counts 2 2")
+    ni_positions = [coords for element, coords in poscar.positions if element == "Ni"]
+    o_positions = [coords for element, coords in poscar.positions if element == "O"]
+    return Poscar(
+        comment=f"{poscar.comment} Ni-up/Ni-down formal species",
+        scale=poscar.scale,
+        lattice=poscar.lattice,
+        species=["Ni_up", "Ni_down", "O"],
+        counts=[1, 1, 2],
+        coordinate_mode="Direct",
+        positions=[
+            ("Ni_up", ni_positions[0]),
+            ("Ni_down", ni_positions[1]),
+            ("O", o_positions[0]),
+            ("O", o_positions[1]),
+        ],
+    )
+
+
 def write_poscar(path: Path, poscar: Poscar) -> None:
     lines = [poscar.comment, poscar.scale]
     lines.extend("  " + " ".join(f"{value:18.12f}" for value in vector) for vector in poscar.lattice)
@@ -249,25 +324,44 @@ def write_mesh_qpoints(path: Path, label: str, mesh: int) -> None:
     )
 
 
-def electronic_blocks(case: dict, primitive: bool = False) -> list[str]:
+def electronic_blocks(case: dict, primitive: bool = False, write_restart: bool = False) -> list[str]:
     spin_block = case.get("primitive_spin_block", case["spin_block"]) if primitive else case["spin_block"]
     smear = "ISMEAR = 1\nSIGMA  = 0.10" if case["metallic"] else "ISMEAR = 0\nSIGMA  = 0.05"
+    restart_block = "LWAVE  = .TRUE.\nLCHARG = .TRUE." if write_restart else "LWAVE  = .FALSE.\nLCHARG = .FALSE."
     return [
-        f"PREC   = Accurate\nENCUT  = {case['encut']}\nEDIFF  = 1E-8\nNELM   = 240\nLREAL  = .FALSE.\nLASPH  = .TRUE.\nADDGRID = .TRUE.",
+        f"PREC   = Accurate\nENCUT  = {case['encut']}\nEDIFF  = 1E-8\nNELM   = 240\nLREAL  = .FALSE.\nLASPH  = .TRUE.\nADDGRID = .FALSE.",
         clean(spin_block).strip(),
         clean(case["ldau_block"]).strip(),
         smear,
-        "LWAVE  = .FALSE.\nLCHARG = .FALSE.",
+        restart_block,
     ]
 
 
+def preconverge_incar(case: dict) -> str:
+    blocks = [
+        f"SYSTEM = {case['key']} phonon preconvergence",
+        "ISTART = 0\nICHARG = 2",
+        *electronic_blocks(case, write_restart=True),
+        "IBRION = -1\nNSW    = 0\nISIF   = 2\nISYM   = 2",
+    ]
+    return "\n\n".join(block for block in blocks if block) + "\n"
+
+
 def force_constants_incar(case: dict) -> str:
+    start_block = "ISTART = 1\nICHARG = 1" if case.get("preconverge_force_constants") else "ISTART = 0\nICHARG = 2"
+    ionic_block = (
+        f"IBRION = {case.get('force_ibrion', 5)}\n"
+        "NFREE  = 2\n"
+        "POTIM  = 0.015\n"
+        "NSW    = 1\n"
+        "ISIF   = 2\n"
+        f"ISYM   = {case.get('force_isym', 0)}"
+    )
     blocks = [
         f"SYSTEM = {case['key']} finite-difference phonons",
-        "ISTART = 0\nICHARG = 2",
+        start_block,
         *electronic_blocks(case),
-        "IBRION = 6\nNFREE  = 2\nPOTIM  = 0.015\nNSW    = 1\nISIF   = 2",
-        "PHON_NWRITE = 2",
+        ionic_block,
     ]
     return "\n\n".join(block for block in blocks if block) + "\n"
 
@@ -284,6 +378,7 @@ def postprocess_incar(case: dict, task: str) -> str:
         f"SYSTEM = {case['key']} phonon {task}",
         "ISTART = 0\nICHARG = 2",
         *electronic_blocks(case),
+        "ISYM   = 0",
         phonon_block,
     ]
     return "\n\n".join(block for block in blocks if block) + "\n"
@@ -302,6 +397,10 @@ def dielectric_incar(case: dict) -> str:
 
 def prepare_case(case: dict) -> None:
     primitive_poscar = read_poscar(poscar_for(case))
+    if case.get("use_fcc_primitive"):
+        primitive_poscar = make_fcc_primitive(primitive_poscar)
+    if case.get("split_nio_magnetic_species"):
+        primitive_poscar = split_nio_magnetic_species(primitive_poscar)
     supercell_poscar = make_supercell(primitive_poscar, case["supercell"])
     if not case["potcar"].exists():
         raise FileNotFoundError(f"Missing POTCAR for {case['key']}: {case['potcar']}")
@@ -309,18 +408,24 @@ def prepare_case(case: dict) -> None:
     if case["polar"]:
         run_dir = case["case_dir"] / "dielectric"
         run_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(poscar_for(case), run_dir / "POSCAR")
-        link_potcar(run_dir, case["potcar"])
+        write_poscar(run_dir / "POSCAR", primitive_poscar)
+        write_potcar_for_case(run_dir, case)
         write_mesh_kpoints(run_dir / "KPOINTS", case["key"], case["primitive_kmesh"])
         write(run_dir / "INCAR", dielectric_incar(case))
 
-    for step in ("force_constants", "dispersion", "dos"):
+    steps = ["force_constants", "dispersion", "dos"]
+    if case.get("preconverge_force_constants"):
+        steps.insert(0, "preconverge")
+
+    for step in steps:
         run_dir = case["case_dir"] / step
         run_dir.mkdir(parents=True, exist_ok=True)
         write_poscar(run_dir / "POSCAR", supercell_poscar)
-        link_potcar(run_dir, case["potcar"])
+        write_potcar_for_case(run_dir, case)
         write_mesh_kpoints(run_dir / "KPOINTS", case["key"], case["kmesh"])
 
+    if case.get("preconverge_force_constants"):
+        write(case["case_dir"] / "preconverge" / "INCAR", preconverge_incar(case))
     write(case["case_dir"] / "force_constants" / "INCAR", force_constants_incar(case))
     write(case["case_dir"] / "dispersion" / "INCAR", postprocess_incar(case, "dispersion"))
     write(case["case_dir"] / "dos" / "INCAR", postprocess_incar(case, "dos"))
@@ -340,7 +445,7 @@ def write_readmes() -> None:
 
         Each case contains:
 
-        - `force_constants`: 2x2x2 finite-difference supercell calculation.
+        - `force_constants`: 2x2x2 finite-difference primitive-cell supercell calculation.
         - `dispersion`: reads `vaspout.h5` force constants and evaluates a high-symmetry QPOINTS path.
         - `dos`: reads `vaspout.h5` force constants and evaluates a uniform q-point mesh for PhDOS.
 
@@ -359,9 +464,15 @@ def write_readmes() -> None:
         The case contains:
 
         - `dielectric`: primitive magnetic-cell LEPSILON run for Born effective charges and dielectric tensor.
-        - `force_constants`: 2x2x2 finite-difference supercell calculation.
+        - `preconverge`: static magnetic-cell run that writes CHGCAR/WAVECAR for the phonon step.
+        - `force_constants`: finite-difference calculation in the 4-ion magnetic primitive cell.
         - `dispersion`: reads `vaspout.h5` force constants and evaluates a high-symmetry QPOINTS path.
         - `dos`: reads `vaspout.h5` force constants and evaluates a uniform q-point mesh for PhDOS.
+
+        The 32-ion 2x2x2 NiO phonon supercell was not used in this workflow because it crashed during
+        the static DFT+U SCF initialization on the available VASP build, before the first electronic
+        iteration. The magnetic primitive-cell setup follows the standard AFM-II NiO DFT+U convention and
+        keeps the calculation runnable for the project report.
 
         The Slurm workflow extracts polar correction tags from `dielectric/OUTCAR` and appends them to
         the phonon calculations. Shared scripts live in `../../common/D/`. Outputs are written under

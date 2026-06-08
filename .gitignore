@@ -17,6 +17,12 @@ outputs/*/slurm/
 *.out
 *.err
 
+# Task D run diagnostics
+input_audit.txt
+task_d_failure_context.log
+**/input_audit.txt
+**/task_d_failure_context.log
+
 # Raw VASP calculation work directories mirrored under outputs/
 outputs/*/calculations/
 

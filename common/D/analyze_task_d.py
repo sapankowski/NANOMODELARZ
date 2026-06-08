@@ -26,6 +26,13 @@ MODE_RE = re.compile(
     re.M,
 )
 FLOAT_RE = re.compile(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[Ee][-+]?\d+)?")
+BRANCH_RE = re.compile(
+    r"^\s*(\d+)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s*$"
+)
 
 
 def calc_case(case: dict, step: str) -> Path:
@@ -57,6 +64,20 @@ def parse_mode_lines(text: str) -> list[dict[str, float | int | bool]]:
             }
         )
     return modes
+
+
+def parse_branch_frequency(line: str) -> dict[str, float | int | bool] | None:
+    match = BRANCH_RE.match(line)
+    if not match:
+        return None
+    thz = float(match.group(2))
+    return {
+        "mode": int(match.group(1)),
+        "thz": thz,
+        "cm1": float(match.group(4)),
+        "mev": float(match.group(5)),
+        "imaginary": thz < 0.0,
+    }
 
 
 def expected_qpoints(qpoints: Path) -> int | None:
@@ -117,6 +138,29 @@ def parse_dispersion(path: Path) -> list[list[dict[str, float | int | bool]]]:
     text = read_text(path / "OUTCAR")
     if not text:
         return []
+
+    q_blocks_from_branches: list[list[dict[str, float | int | bool]]] = []
+    current_branch_block: list[dict[str, float | int | bool]] = []
+    expect_branch_frequency = False
+    for line in text.splitlines():
+        if re.match(r"\s*q-point No\.", line):
+            if current_branch_block:
+                q_blocks_from_branches.append(current_branch_block)
+            current_branch_block = []
+            expect_branch_frequency = False
+            continue
+        if "branch index" in line and "f[THz]" in line:
+            expect_branch_frequency = True
+            continue
+        if expect_branch_frequency:
+            mode = parse_branch_frequency(line)
+            if mode:
+                current_branch_block.append(mode)
+            expect_branch_frequency = False
+    if current_branch_block:
+        q_blocks_from_branches.append(current_branch_block)
+    if q_blocks_from_branches:
+        return q_blocks_from_branches
 
     q_blocks: list[list[dict[str, float | int | bool]]] = []
     current: list[str] = []

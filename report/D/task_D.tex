@@ -11,21 +11,38 @@ state considered in Task B.
 The phonon calculations use the finite-difference force-constant workflow in
 VASP.  In this approach, VASP displaces atoms in a supercell, computes the
 resulting forces, constructs the second-order force constants, and diagonalizes
-the dynamical matrix.  The finite-difference setup uses \texttt{IBRION = 6},
-\texttt{NFREE = 2}, and \texttt{POTIM = 0.015}~\AA.  The use of
-\texttt{IBRION = 6} lets VASP reduce the number of displacements by symmetry
-where possible \cite{vasp-phonon-fd}.
+the dynamical matrix.  The Ni finite-difference setup uses \texttt{IBRION = 5},
+\texttt{NFREE = 2}, \texttt{POTIM = 0.015}~\AA, and \texttt{ISYM = 0}.  The NiO
+force-constant calculation uses \texttt{IBRION = 6} and \texttt{ISYM = 2}, so
+VASP reduces the DFT+\(U\) finite displacements using the magnetic-cell symmetry
+\cite{vasp-phonon-fd}.
 
-Both systems use \(2\times2\times2\) phonon supercells constructed from the
-relaxed Task B cells.  The Ni supercell contains 32 Ni atoms and uses a
-\(12\times12\times12\) electronic k-point mesh.  The NiO supercell contains 16
-Ni atoms and 16 O atoms and uses an \(8\times8\times8\) electronic k-point mesh.
+The Ni calculation uses a \(2\times2\times2\) phonon supercell constructed from
+the relaxed Task B cell.  For Ni, the relaxed conventional fcc cell is first
+converted to the one-atom primitive fcc cell; the phonon supercell therefore
+contains 8 Ni atoms and uses an \(8\times8\times8\) electronic k-point mesh.  The
+NiO finite-difference calculation uses the 4-ion AFM-II magnetic primitive cell
+and a \(16\times16\times16\) electronic k-point mesh.
+Following the VASP NiO DFT+\(U\) tutorial convention, the two magnetic Ni
+sublattices are represented as separate formal species, \texttt{Ni\_up} and
+\texttt{Ni\_down}; the corresponding POTCAR therefore contains two Ni PAW
+datasets followed by the O PAW dataset \cite{vasp-nio-u}.
 These k-point meshes preserve approximately the same reciprocal-space sampling
 density as the smaller cells used in Tasks B and C.  The phonon dispersion and
 phonon density of states are obtained by reading the calculated force constants
 from \texttt{vaspout.h5}, supplying a \texttt{QPOINTS} path or mesh, and setting
 \texttt{LPHON\_DISPERSION} or \texttt{PHON\_DOS}, respectively
 \cite{vasp-phonon-dispersion}.
+
+The NiO force-constant step is preceded by a static calculation of the same
+magnetic cell.  The resulting \texttt{CHGCAR} and \texttt{WAVECAR} are then
+used to initialize the finite-difference calculation, which avoids starting the
+DFT+\(U\) displaced-cell force evaluations from atomic densities.  A larger
+32-ion \(2\times2\times2\) NiO supercell was tested, but on the available VASP
+build the static DFT+\(U\) initialization repeatedly terminated with a
+\texttt{SIGFPE} before the first electronic iteration.  The primitive-cell setup
+therefore provides a runnable finite-difference calculation consistent with the
+standard AFM-II NiO cell used in the VASP DFT+\(U\) examples.
 
 For NiO, a separate primitive-cell linear-response calculation with
 \texttt{LEPSILON = .TRUE.} is included to compute the ion-clamped dielectric
@@ -43,8 +60,9 @@ The Task D input folders are:
   \item \texttt{NiO/D/DFTU\_AFM}: AFM-II DFT+\(U\) NiO phonons.
 \end{itemize}
 Each case contains \texttt{force\_constants}, \texttt{dispersion}, and
-\texttt{dos} subfolders.  The NiO case also contains a \texttt{dielectric}
-subfolder used to generate the polar correction input.
+\texttt{dos} subfolders.  The NiO case also contains \texttt{dielectric} and
+\texttt{preconverge} subfolders used to generate the polar correction input and
+the magnetic-cell restart files, respectively.
 
 After the VASP jobs finish, the analysis script
 \texttt{common/D/analyze\_task\_d.py} extracts the \(\Gamma\)-point
@@ -53,10 +71,52 @@ the phonon dispersion and PhDOS plots.
 
 \subsection{Results}
 
-The Task D VASP calculations have to be run before numerical phonon results can
-be inserted.  The expected output tables are written to
-\texttt{outputs/D/reports/Task\_D\_summary\_table.md} and
-\texttt{outputs/D/reports/Task\_D\_gamma\_modes.md}.
+The Task D VASP calculations completed successfully for both systems.  The Ni
+calculation used the ferromagnetic PBE force constants, while the NiO
+calculation used the DFT+\(U\) AFM-II force constants with the polar correction
+from the Born effective charges and electronic dielectric tensor.  The
+resulting \(\Gamma\)-point phonon summaries are given in
+Tables~\ref{tab:task-d-summary} and~\ref{tab:task-d-gamma}.  No imaginary modes
+were found in either system.  The small values reported as \(-0.0000\) or
+\(0.0000~\mathrm{THz}\) are numerical acoustic modes at \(\Gamma\), not
+physical instabilities.
+
+\begin{table}[h]
+\centering
+\caption{Task D phonon stability summary.}
+\label{tab:task-d-summary}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llllrrl}
+\toprule
+System & Case & Method/order & Cell used for force constants &
+\(\Gamma\) modes & Imaginary modes & Dynamically stable? \\
+\midrule
+Ni  & \texttt{Ni\_PBE\_FM}       & PBE FM              & 8-atom primitive-supercell & 3  & 0 & yes \\
+NiO & \texttt{NiO\_DFTU\_AFM}    & DFT+\(U\) AFM-II    & 4-ion magnetic primitive cell & 12 & 0 & yes \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{\(\Gamma\)-point phonon frequencies from the Task D dispersion
+calculations.}
+\label{tab:task-d-gamma}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrl}
+\toprule
+System & Case & Mode(s) & Frequency or frequencies \\
+\midrule
+Ni  & \texttt{Ni\_PBE\_FM}    & 1--3  & \(-0.000000\), \(-0.000000\), \(0.000000~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 1--3  & \(0.000000\), \(0.000000\), \(0.000000~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 4--6  & \(5.762304\), \(5.762304\), \(9.516525~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 7--9  & \(9.723637\), \(9.723637\), \(10.842726~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 10--12 & \(11.083248\), \(15.977053\), \(17.063302~\mathrm{THz}\) \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
 
 \IfFileExists{figures/Ni_PBE_FM_phonon_dispersion.pdf}{%
 \begin{figure}[htbp]
@@ -98,11 +158,23 @@ magnetic ordering.}
 
 \subsection{Discussion}
 
-The phonon spectra should be interpreted by checking whether any branch has a
-negative frequency, equivalently an imaginary mode.  If no significant
-imaginary frequencies are present, the relaxed structure is dynamically stable
-within the harmonic approximation.  Small residual imaginary acoustic
-frequencies near \(\Gamma\) can occur from finite numerical precision, limited
-supercell size, or incomplete force convergence; if they appear, the first
-checks should be a larger supercell, tighter electronic convergence, and denser
-k-point sampling \cite{vasp-phonon-fd}.
+The calculated phonon spectra do not show any imaginary modes, so both relaxed
+ground-state structures are dynamically stable within the harmonic
+approximation used here.  For Ni, the three \(\Gamma\)-point modes are the
+expected acoustic modes of the one-atom primitive fcc cell and are numerically
+zero.  The dispersion and PhDOS therefore support the stability of the relaxed
+ferromagnetic PBE Ni structure.
+
+For NiO, the three acoustic \(\Gamma\)-point modes are also zero within
+numerical precision, and the optical modes are all positive.  This supports the
+dynamical stability of the DFT+\(U\) AFM-II NiO structure used as the Task B
+ground state.  The polar correction was included for NiO because the oxide is
+ionic; this is important for the long-range dipole contribution and LO--TO
+splitting near \(\Gamma\).  The main limitation of the present NiO calculation
+is that it uses the 4-ion magnetic primitive cell rather than a larger phonon
+supercell, because the tested 32-ion DFT+\(U\) supercell repeatedly triggered a
+\texttt{SIGFPE} during the initial SCF setup on the available VASP build.  A
+more converged production study would retry the larger supercell with another
+VASP build or with a carefully benchmarked alternative finite-displacement
+workflow, but the present calculation is sufficient to demonstrate positive
+phonon frequencies for the selected AFM-II structure.

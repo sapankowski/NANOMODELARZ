@@ -9,17 +9,17 @@ EDIFF  = 1E-8
 NELM   = 240
 LREAL  = .FALSE.
 LASPH  = .TRUE.
-ADDGRID = .TRUE.
+ADDGRID = .FALSE.
 
 ISPIN  = 2
 MAGMOM = 2.0 -2.0 2*0.0
 
 LDAU      = .TRUE.
 LDAUTYPE  = 2
-LDAUL     = 2 -1
-LDAUU     = 7.2 0.0
-LDAUJ     = 1.0 0.0
-LDAUPRINT = 1
+LDAUL     = 2 2 -1
+LDAUU     = 7.2 7.2 0.0
+LDAUJ     = 1.0 1.0 0.0
+LDAUPRINT = 0
 LMAXMIX   = 4
 
 AMIX      = 0.2

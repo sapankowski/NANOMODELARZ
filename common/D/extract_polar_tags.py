@@ -65,37 +65,74 @@ def parse_born_charges(lines: list[str]) -> list[list[list[float]]]:
     return charges
 
 
+def read_poscar_nions(path: Path) -> int:
+    lines = [line.split() for line in path.read_text(errors="ignore").splitlines() if line.strip()]
+    if len(lines) < 7:
+        raise ValueError(f"POSCAR is too short: {path}")
+    counts_line = lines[5] if all(value.isdigit() for value in lines[5]) else lines[6]
+    return sum(int(value) for value in counts_line)
+
+
+def expand_charges(charges: list[list[list[float]]], target_nions: int | None) -> list[list[list[float]]]:
+    if target_nions is None or target_nions == len(charges):
+        return charges
+    if target_nions % len(charges) != 0:
+        raise ValueError(
+            f"Cannot expand {len(charges)} Born-charge tensors to {target_nions} target ions"
+        )
+    repeat = target_nions // len(charges)
+    expanded: list[list[list[float]]] = []
+    for tensor in charges:
+        expanded.extend([tensor] * repeat)
+    return expanded
+
+
 def format_matrix_rows(rows: list[list[float]], indent: str = "  ") -> list[str]:
     return [indent + " ".join(f"{value:14.8f}" for value in row) for row in rows]
 
 
-def format_tags(dielectric: list[list[float]], charges: list[list[list[float]]]) -> str:
-    lines = ["LPHON_POLAR = .TRUE.", "PHON_DIELECTRIC = \\"]
-    dielectric_rows = format_matrix_rows(dielectric)
-    for index, row in enumerate(dielectric_rows):
-        lines.append(row + (" \\" if index < len(dielectric_rows) - 1 else ""))
+def flatten_matrix(rows: list[list[float]]) -> list[float]:
+    return [value for row in rows for value in row]
 
-    lines.append("")
-    lines.append("PHON_BORN_CHARGES = \\")
-    charge_rows = []
-    for tensor in charges:
-        charge_rows.extend(format_matrix_rows(tensor))
-        charge_rows.append("  \\")
-    if charge_rows:
-        charge_rows[-1] = charge_rows[-1].rstrip(" \\")
-    lines.extend(charge_rows)
+
+def format_tags(dielectric: list[list[float]], charges: list[list[list[float]]]) -> str:
+    dielectric_values = flatten_matrix(dielectric)
+    charge_values = [value for tensor in charges for value in flatten_matrix(tensor)]
+    lines = ["LPHON_POLAR = .TRUE."]
+    lines.extend(format_values_tag("PHON_DIELECTRIC", dielectric_values))
+    lines.extend(format_values_tag("PHON_BORN_CHARGES", charge_values))
     return "\n".join(lines) + "\n"
+
+
+def format_values_tag(name: str, values: list[float], values_per_line: int = 9) -> list[str]:
+    rows = [
+        " ".join(f"{value:.8f}" for value in values[index : index + values_per_line])
+        for index in range(0, len(values), values_per_line)
+    ]
+    if len(rows) == 1:
+        return [f"{name} = {rows[0]}"]
+    lines = [f"{name} = \\"]
+    for index, row in enumerate(rows):
+        lines.append(f"  {row}" + (" \\" if index < len(rows) - 1 else ""))
+    return lines
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--outcar", type=Path, required=True, help="LEPSILON OUTCAR")
     parser.add_argument("--output", type=Path, required=True, help="Output INCAR tag snippet")
+    parser.add_argument(
+        "--target-poscar",
+        type=Path,
+        help="Expand Born-charge tensors to match this POSCAR ion count",
+    )
     args = parser.parse_args()
 
     lines = args.outcar.read_text(errors="ignore").splitlines()
     dielectric = parse_dielectric(lines)
     charges = parse_born_charges(lines)
+    target_nions = read_poscar_nions(args.target_poscar) if args.target_poscar else None
+    charges = expand_charges(charges, target_nions)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(format_tags(dielectric, charges))
     print(f"Wrote polar phonon tags for {len(charges)} ions to {args.output}")
