@@ -412,6 +412,50 @@ def draw_band_ticks(
             parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{escape(label)}</text>')
 
 
+def draw_y_ticks(
+    parts: list[str],
+    value_min: float,
+    value_max: float,
+    left: int,
+    right: int,
+    top: int,
+    bottom: int,
+    ticks: list[float],
+    fmt: str = "{:.1f}",
+) -> None:
+    for value in ticks:
+        if value < value_min - 1e-9 or value > value_max + 1e-9:
+            continue
+        y = scale(value, value_min, value_max, bottom, top)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" class="grid"/>')
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{fmt.format(value)}</text>')
+
+
+def draw_x_ticks(
+    parts: list[str],
+    value_min: float,
+    value_max: float,
+    left: int,
+    right: int,
+    top: int,
+    bottom: int,
+    ticks: list[float],
+    fmt: str = "{:.0f}",
+) -> None:
+    for value in ticks:
+        if value < value_min - 1e-9 or value > value_max + 1e-9:
+            continue
+        x = scale(value, value_min, value_max, left, right)
+        parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{bottom}" class="grid"/>')
+        parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{fmt.format(value)}</text>')
+
+
+def positive_ticks(max_value: float, count: int = 5) -> list[float]:
+    if max_value <= 0:
+        return [0.0]
+    return [max_value * index / (count - 1) for index in range(count)]
+
+
 def plot_dos(case: dict, dos: dict | None) -> Path | None:
     if dos is None or not dos["total"]:
         return None
@@ -426,8 +470,8 @@ def plot_dos(case: dict, dos: dict | None) -> Path | None:
     ymax = max(max(up), abs(min(down)), 1e-9)
     parts = svg_header(width, height, f"{case['key']} total and spin-resolved DOS")
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
-    parts.append(f'<line x1="{left}" y1="{scale(0, -ymax, ymax, bottom, top):.1f}" x2="{right}" y2="{scale(0, -ymax, ymax, bottom, top):.1f}" class="grid"/>')
-    parts.append(f'<line x1="{scale(0, -8, 8, left, right):.1f}" y1="{top}" x2="{scale(0, -8, 8, left, right):.1f}" y2="{bottom}" class="grid"/>')
+    draw_x_ticks(parts, -8.0, 8.0, left, right, top, bottom, [-8, -4, 0, 4, 8])
+    draw_y_ticks(parts, -ymax, ymax, left, right, top, bottom, [-ymax, -0.5 * ymax, 0.0, 0.5 * ymax, ymax])
     parts.append(polyline([(scale(e, -8, 8, left, right), scale(v, -ymax, ymax, bottom, top)) for e, v in zip(energies, up)], "up"))
     parts.append(polyline([(scale(e, -8, 8, left, right), scale(v, -ymax, ymax, bottom, top)) for e, v in zip(energies, down)], "down"))
     parts.append(f'<text x="{(left+right)/2}" y="430" text-anchor="middle" class="label">Energy - E_F (eV)</text>')
@@ -455,7 +499,8 @@ def plot_pdos(case: dict, dos: dict | None) -> Path | None:
     ymax = max(values) if values else 1.0
     parts = svg_header(width, height, f"{case['key']} projected DOS")
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
-    parts.append(f'<line x1="{scale(0, -8, 8, left, right):.1f}" y1="{top}" x2="{scale(0, -8, 8, left, right):.1f}" y2="{bottom}" class="grid"/>')
+    draw_x_ticks(parts, -8.0, 8.0, left, right, top, bottom, [-8, -4, 0, 4, 8])
+    draw_y_ticks(parts, 0.0, ymax, left, right, top, bottom, positive_ticks(ymax))
     classes = ["up", "pdos1", "pdos2", "pdos3", "down"]
     parts.append(legend_background(right - 168, top + 6, 145, len(selected)))
     for idx, (key, points) in enumerate(selected):
@@ -480,7 +525,7 @@ def plot_bands(case: dict, data: dict | None, fermi: float | None, projected: bo
     ymin, ymax = -8.0, 8.0
     parts = svg_header(width, height, f"{case['key']} {'projected ' if projected else ''}band structure")
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
-    parts.append(f'<line x1="{left}" y1="{scale(0, ymin, ymax, bottom, top):.1f}" x2="{right}" y2="{scale(0, ymin, ymax, bottom, top):.1f}" class="grid"/>')
+    draw_y_ticks(parts, ymin, ymax, left, right, top, bottom, [-8, -4, 0, 4, 8])
     draw_band_ticks(parts, band_ticks(calc_case(case, "bands"), distances), xmax, left, right, top, bottom)
     for band in data["bands_up"]:
         shifted = [energy - fermi for energy in band]
