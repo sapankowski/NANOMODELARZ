@@ -26,6 +26,13 @@ MODE_RE = re.compile(
     re.M,
 )
 FLOAT_RE = re.compile(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[Ee][-+]?\d+)?")
+QPATH_RE = re.compile(
+    r"^\s*(\d+)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s*$"
+)
 BRANCH_RE = re.compile(
     r"^\s*(\d+)\s+"
     r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
@@ -132,6 +139,62 @@ def qpoint_path(qpoints: Path) -> tuple[list[float], list[tuple[float, str]]]:
         else:
             ticks.append((distance, end_label))
     return x_values, ticks
+
+
+def qpoint_labels(qpoints: Path) -> tuple[int, list[str]]:
+    if not qpoints.exists():
+        return 0, []
+    lines = qpoints.read_text(errors="ignore").splitlines()
+    try:
+        points_per_segment = int(lines[1].split()[0])
+    except (IndexError, ValueError):
+        points_per_segment = 0
+    labels = []
+    for line in lines[4:]:
+        if "!" in line:
+            labels.append(line.split("!", 1)[1].strip().replace("Gamma", "G"))
+    return points_per_segment, labels
+
+
+def qpoint_ticks_from_lengths(qpoints: Path, lengths: list[float]) -> list[tuple[float, str]]:
+    points_per_segment, labels = qpoint_labels(qpoints)
+    if not points_per_segment or not labels:
+        return []
+    ticks: list[tuple[float, str]] = []
+    segment_count = len(labels) // 2
+    for segment_index in range(segment_count):
+        start_label = labels[2 * segment_index]
+        end_label = labels[2 * segment_index + 1]
+        start_index = segment_index * points_per_segment
+        end_index = min(start_index + points_per_segment - 1, len(lengths) - 1)
+        if start_index >= len(lengths):
+            break
+        if not ticks:
+            ticks.append((lengths[start_index], start_label))
+        if ticks and abs(ticks[-1][0] - lengths[end_index]) < 1e-8:
+            if end_label not in ticks[-1][1].split("/"):
+                ticks[-1] = (ticks[-1][0], f"{ticks[-1][1]}/{end_label}")
+        else:
+            ticks.append((lengths[end_index], end_label))
+    return ticks
+
+
+def parse_qpath_lengths(path: Path) -> list[float]:
+    lines = read_text(path / "OUTCAR").splitlines()
+    lengths: list[float] = []
+    expecting_coordinates = False
+    for line in lines:
+        if re.match(r"\s*q-point No\.", line):
+            expecting_coordinates = True
+            continue
+        if expecting_coordinates:
+            match = QPATH_RE.match(line)
+            if match:
+                lengths.append(float(match.group(5)))
+                expecting_coordinates = False
+            elif line.strip():
+                expecting_coordinates = False
+    return lengths
 
 
 def parse_dispersion(path: Path) -> list[list[dict[str, float | int | bool]]]:
@@ -242,6 +305,21 @@ def write_dos_csv(case: dict, dos: list[tuple[float, float]]) -> None:
         writer.writerows((f"{freq:.8f}", f"{density:.10f}") for freq, density in dos)
 
 
+def write_dispersion_csv(case: dict, x_values: list[float], q_blocks: list[list[dict[str, float | int | bool]]]) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    output = REPORT_DIR / f"{case['key']}_phonon_dispersion.csv"
+    max_branches = max((len(block) for block in q_blocks), default=0)
+    headers = ["q_index", "q_path_length"] + [f"branch_{index}_thz" for index in range(1, max_branches + 1)]
+    with output.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(headers)
+        for q_index, (x_value, modes) in enumerate(zip(x_values, q_blocks), start=1):
+            row = [q_index, f"{x_value:.8f}"]
+            row.extend(f"{float(mode['thz']):.8f}" for mode in modes)
+            row.extend("" for _ in range(max_branches - len(modes)))
+            writer.writerow(row)
+
+
 def parse_dos(path: Path) -> list[tuple[float, float]]:
     lines = read_text(path / "OUTCAR").splitlines()
     if not lines:
@@ -325,13 +403,19 @@ def plot_dispersion(case: dict) -> Path | None:
     q_blocks = parse_dispersion(calc_case(case, "dispersion"))
     if not q_blocks:
         return None
-    x_values, ticks = qpoint_path(calc_case(case, "dispersion") / "QPOINTS")
+    dispersion_dir = calc_case(case, "dispersion")
+    qpoints_file = dispersion_dir / "QPOINTS"
+    x_values = parse_qpath_lengths(dispersion_dir)
+    ticks = qpoint_ticks_from_lengths(qpoints_file, x_values)
+    if len(x_values) != len(q_blocks):
+        x_values, ticks = qpoint_path(qpoints_file)
     if not x_values:
         x_values = list(range(len(q_blocks)))
         ticks = [(0.0, "G"), (float(len(q_blocks) - 1), "")]
     point_count = min(len(x_values), len(q_blocks))
     q_blocks = q_blocks[:point_count]
     x_values = x_values[:point_count]
+    write_dispersion_csv(case, x_values, q_blocks)
 
     branches = list(zip(*[[float(mode["thz"]) for mode in modes] for modes in q_blocks]))
     all_freqs = [freq for branch in branches for freq in branch]
@@ -347,6 +431,11 @@ def plot_dispersion(case: dict) -> Path | None:
     xmax = max(x_values) if x_values else 1.0
     parts = svg_header(width, height, f"{case['key']} phonon dispersion")
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
+    for index in range(1, 5):
+        tick = ymin + (ymax - ymin) * index / 5.0
+        y = scale(tick, ymin, ymax, bottom, top)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" class="grid"/>')
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{tick:.1f}</text>')
     zero_y = scale(0.0, ymin, ymax, bottom, top)
     parts.append(f'<line x1="{left}" y1="{zero_y:.1f}" x2="{right}" y2="{zero_y:.1f}" class="zero"/>')
     for tick_value, label in ticks:
