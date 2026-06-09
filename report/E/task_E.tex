@@ -1,0 +1,32 @@
+The mechanical properties were computed from VASP finite-difference elastic
+tensors using \texttt{IBRION = 6}, \texttt{ISIF = 3}, \texttt{NFREE = 2}, and a
+small strain step \texttt{POTIM = 0.015}.  The calculations used the same
+relaxed ground-state structures and magnetic configurations selected in Task B:
+ferromagnetic PBE Ni and AFM-II DFT+\(U\) NiO.  For NiO, the two Ni sites were
+kept as formal \texttt{Ni\_up} and \texttt{Ni\_down} species with duplicated Ni
+PAW datasets so that the opposite magnetic moments remain explicit during the
+elastic-tensor calculation.
+
+The full elastic tensor was reduced to effective cubic constants by averaging
+the equivalent components,
+\[
+C_{11} = \langle C_{xx,xx}, C_{yy,yy}, C_{zz,zz}\rangle,\qquad
+C_{12} = \langle C_{xx,yy}, C_{xx,zz}, C_{yy,xx}, C_{yy,zz}, C_{zz,xx},
+C_{zz,yy}\rangle,
+\]
+and
+\[
+C_{44} = \langle C_{xy,xy}, C_{yz,yz}, C_{zx,zx}\rangle.
+\]
+The bulk modulus was evaluated as \(B=(C_{11}+2C_{12})/3\).  The shear modulus
+reported in the table is the Voigt--Reuss--Hill average for a cubic material,
+which was then used to compute Young's modulus and Poisson's ratio:
+\[
+E = \frac{9BG}{3B+G},\qquad
+\nu = \frac{3B-2G}{2(3B+G)}.
+\]
+
+The numerical results are written by \texttt{common/E/analyze\_task\_e.py} to
+\texttt{outputs/E/reports/Task\_E\_results\_table.md} after the Task E VASP
+jobs finish.  The same script also writes the full \(6\times6\) elastic tensors
+in GPa for each system.

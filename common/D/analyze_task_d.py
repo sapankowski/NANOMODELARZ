@@ -141,22 +141,23 @@ def parse_dispersion(path: Path) -> list[list[dict[str, float | int | bool]]]:
 
     q_blocks_from_branches: list[list[dict[str, float | int | bool]]] = []
     current_branch_block: list[dict[str, float | int | bool]] = []
-    expect_branch_frequency = False
+    reading_branch_frequencies = False
     for line in text.splitlines():
         if re.match(r"\s*q-point No\.", line):
             if current_branch_block:
                 q_blocks_from_branches.append(current_branch_block)
             current_branch_block = []
-            expect_branch_frequency = False
+            reading_branch_frequencies = False
             continue
         if "branch index" in line and "f[THz]" in line:
-            expect_branch_frequency = True
+            reading_branch_frequencies = True
             continue
-        if expect_branch_frequency:
+        if reading_branch_frequencies:
             mode = parse_branch_frequency(line)
             if mode:
                 current_branch_block.append(mode)
-            expect_branch_frequency = False
+            elif line.strip():
+                reading_branch_frequencies = False
     if current_branch_block:
         q_blocks_from_branches.append(current_branch_block)
     if q_blocks_from_branches:
@@ -197,27 +198,96 @@ def parse_gamma_modes(case: dict) -> list[dict[str, float | int | bool]]:
     return parse_mode_lines(read_text(calc_case(case, "force_constants") / "OUTCAR"))
 
 
+def parse_incar_float(path: Path, tag: str, default: float) -> float:
+    pattern = re.compile(rf"^\s*{re.escape(tag)}\s*=\s*([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)", re.I)
+    for line in read_text(path / "INCAR").splitlines():
+        match = pattern.match(line)
+        if match:
+            return float(match.group(1))
+    return default
+
+
+def parse_incar_int(path: Path, tag: str, default: int) -> int:
+    pattern = re.compile(rf"^\s*{re.escape(tag)}\s*=\s*(\d+)", re.I)
+    for line in read_text(path / "INCAR").splitlines():
+        match = pattern.match(line)
+        if match:
+            return int(match.group(1))
+    return default
+
+
+def parse_qpoint_weights(lines: list[str]) -> list[float]:
+    weights: list[float] = []
+    in_weights = False
+    for line in lines:
+        if "Coordinates" in line and "Weight" in line:
+            in_weights = True
+            continue
+        if not in_weights:
+            continue
+        values = [float(value) for value in FLOAT_RE.findall(line)]
+        if len(values) == 4:
+            weights.append(values[3])
+        elif weights:
+            break
+    return weights
+
+
+def write_dos_csv(case: dict, dos: list[tuple[float, float]]) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    output = REPORT_DIR / f"{case['key']}_phdos.csv"
+    with output.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["frequency_thz", "phdos_modes_per_thz"])
+        writer.writerows((f"{freq:.8f}", f"{density:.10f}") for freq, density in dos)
+
+
 def parse_dos(path: Path) -> list[tuple[float, float]]:
     lines = read_text(path / "OUTCAR").splitlines()
     if not lines:
         return []
-    marker_indices = [
-        index
-        for index, line in enumerate(lines)
-        if "phonon" in line.lower() and "dos" in line.lower()
-    ]
-    best: list[tuple[float, float]] = []
-    for start in marker_indices:
-        rows: list[tuple[float, float]] = []
-        for line in lines[start + 1 : start + 5000]:
-            values = [float(value) for value in FLOAT_RE.findall(line)]
-            if len(values) >= 2 and not any(char.isalpha() for char in line.replace("E", "").replace("e", "")):
-                rows.append((values[0], values[1]))
-            elif len(rows) > 10:
-                break
-        if len(rows) > len(best):
-            best = rows
-    return best
+
+    q_blocks = parse_dispersion(path)
+    if not q_blocks:
+        return []
+    weights = parse_qpoint_weights(lines)
+    if len(weights) != len(q_blocks):
+        weights = [1.0] * len(q_blocks)
+
+    weighted_frequencies: list[tuple[float, float]] = []
+    total_weight = sum(weights) or float(len(weights))
+    for q_weight, modes in zip(weights, q_blocks):
+        normalized_weight = q_weight / total_weight
+        for mode in modes:
+            weighted_frequencies.append((float(mode["thz"]), normalized_weight))
+    if not weighted_frequencies:
+        return []
+
+    sigma = parse_incar_float(path, "PHON_SIGMA", 0.10)
+    nedos = max(parse_incar_int(path, "PHON_NEDOS", 1200), 100)
+    min_freq = min(freq for freq, _weight in weighted_frequencies)
+    max_freq = max(freq for freq, _weight in weighted_frequencies)
+    xmin = min(0.0, min_freq - 4.0 * sigma)
+    xmax = max_freq + 4.0 * sigma
+    if xmax <= xmin:
+        xmax = xmin + 1.0
+    step = (xmax - xmin) / (nedos - 1)
+    prefactor = 1.0 / (sigma * math.sqrt(2.0 * math.pi))
+    densities = [0.0] * nedos
+
+    for freq, weight in weighted_frequencies:
+        start = max(0, int((freq - 4.0 * sigma - xmin) / step))
+        stop = min(nedos - 1, int((freq + 4.0 * sigma - xmin) / step) + 1)
+        for index in range(start, stop + 1):
+            x = xmin + index * step
+            delta = (x - freq) / sigma
+            densities[index] += weight * prefactor * math.exp(-0.5 * delta * delta)
+
+    target_area = sum(weight for _freq, weight in weighted_frequencies)
+    area = sum((densities[index] + densities[index + 1]) * 0.5 * step for index in range(nedos - 1))
+    if area > 0:
+        densities = [density * target_area / area for density in densities]
+    return [(xmin + index * step, density) for index, density in enumerate(densities)]
 
 
 def scale(value: float, source_min: float, source_max: float, target_min: float, target_max: float) -> float:
@@ -297,6 +367,7 @@ def plot_dos(case: dict) -> Path | None:
     dos = parse_dos(calc_case(case, "dos"))
     if not dos:
         return None
+    write_dos_csv(case, dos)
     frequencies = [row[0] for row in dos]
     densities = [row[1] for row in dos]
     output = FIGURE_DIR / f"{case['key']}_phdos.svg"
@@ -307,6 +378,17 @@ def plot_dos(case: dict) -> Path | None:
     ymax = max(ymax, 1e-9)
     parts = svg_header(width, height, f"{case['key']} phonon DOS")
     parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
+    x_tick_count = 6
+    for index in range(x_tick_count):
+        tick = xmin + (xmax - xmin) * index / (x_tick_count - 1)
+        x = scale(tick, xmin, xmax, left, right)
+        parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{bottom}" class="grid"/>')
+        parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{tick:.1f}</text>')
+    for index in range(1, 5):
+        tick = ymax * index / 4.0
+        y = scale(tick, ymin, ymax, bottom, top)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" class="grid"/>')
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{tick:.1f}</text>')
     parts.append(polyline([(scale(x, xmin, xmax, left, right), scale(y, ymin, ymax, bottom, top)) for x, y in dos], "dos"))
     parts.append(f'<text x="{(left+right)/2}" y="430" text-anchor="middle" class="label">Frequency (THz)</text>')
     parts.append('<text x="24" y="230" text-anchor="middle" class="label" transform="rotate(-90 24 230)">PhDOS</text>')
