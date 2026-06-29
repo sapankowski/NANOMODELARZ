@@ -64,7 +64,7 @@ CASES = [
             LDAUL     = 2 2 -1
             LDAUU     = 7.2 7.2 0.0
             LDAUJ     = 1.0 1.0 0.0
-            LDAUPRINT = 1
+            LDAUPRINT = 0
             LMAXMIX   = 4
 
             AMIX      = 0.2
@@ -216,6 +216,7 @@ def elastic_incar(case: dict) -> str:
         ENCUT  = {case['encut']}
         EDIFF  = 1E-8
         NELM   = 240
+        NWRITE = 1
         LREAL  = .FALSE.
         LASPH  = .TRUE.
         ADDGRID = .TRUE.

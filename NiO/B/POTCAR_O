@@ -1,3 +1,14 @@
+  PAW_PBE O 08Apr2002                    
+   6.00000000000000     
+ parameters from PSCTR are:
+   SHA256 =  818f92134a0a090dccd8ba1447fa70422a3b330e708bb4f08108d8ae51209ddf O/POTCAR
+   COPYR  = (c) Copyright 08Apr2002 Georg Kresse
+   COPYR  = This file is part of the software VASP. Any use, copying, and all other rights are regulated by the VASP license agreement.
+   COPYR  = If you do not have a valid VASP license, you may not use, copy or distribute this file.
+   VRHFIN =O: s2p4
+   LEXCH  = PE
+   EATOM  =   432.3788 eV,   31.7789 Ry
+
    TITEL  = PAW_PBE O 08Apr2002
    LULTRA =        F    use ultrasoft PP ?
    IUNSCR =        1    unscreen: 0-lin 1-nonlin 2-no

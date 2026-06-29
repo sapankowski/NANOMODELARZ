@@ -30,6 +30,8 @@ CASES=(
   NiO/B/ATOM_O
 )
 
+python3 "$SLURM_SUBMIT_DIR/common/B/check_task_b_inputs.py"
+
 if (( SLURM_ARRAY_TASK_ID >= ${#CASES[@]} )); then
   echo "Array index ${SLURM_ARRAY_TASK_ID} outside CASES length ${#CASES[@]}" >&2
   exit 1

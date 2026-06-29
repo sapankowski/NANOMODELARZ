@@ -1,3 +1,15 @@
+\subsection{Purpose}
+
+Task E calculates the linear mechanical properties of the relaxed magnetic
+ground-state structures identified in Task B using finite-difference elastic
+tensors in VASP.  For Ni, the calculation uses the relaxed ferromagnetic PBE
+structure.  For NiO, the calculation uses the relaxed DFT+\(U\) AFM-II
+structure.  These elastic-tensor calculations provide the second-order elastic
+constants and derived mechanical properties including bulk modulus, shear
+modulus, Young's modulus, Poisson's ratio, and mechanical stability criteria.
+
+\subsection{Computational Setup and Assumptions}
+
 The mechanical properties were computed from VASP finite-difference elastic
 tensors using \texttt{IBRION = 6}, \texttt{ISIF = 3}, \texttt{NFREE = 2}, and a
 small strain step \texttt{POTIM = 0.015}.  The calculations used the same
@@ -6,6 +18,12 @@ ferromagnetic PBE Ni and AFM-II DFT+\(U\) NiO.  For NiO, the two Ni sites were
 kept as formal \texttt{Ni\_up} and \texttt{Ni\_down} species with duplicated Ni
 PAW datasets so that the opposite magnetic moments remain explicit during the
 elastic-tensor calculation.
+
+Both elastic-tensor calculations used the same k-point mesh densities as the
+parent Task B calculations to ensure consistent electronic structure sampling.
+For Ni, the ferromagnetic ground state was used without changes in magnetic
+configuration.  For NiO, the antiferromagnetic AFM-II ordering was maintained
+throughout the finite-displacement cycle.
 
 The full elastic tensor was reduced to effective cubic constants by averaging
 the equivalent components,
@@ -25,8 +43,118 @@ which was then used to compute Young's modulus and Poisson's ratio:
 E = \frac{9BG}{3B+G},\qquad
 \nu = \frac{3B-2G}{2(3B+G)}.
 \]
+A cubic material is mechanically stable when the Born stability conditions
+\(C_{11}-C_{12}>0\), \(C_{11}+2C_{12}>0\), and \(C_{44}>0\) are satisfied.
+These criteria ensure that the structure lies in a stable mechanical
+configuration within the linear-response regime.
 
-The numerical results are written by \texttt{common/E/analyze\_task\_e.py} to
-\texttt{outputs/E/reports/Task\_E\_results\_table.md} after the Task E VASP
-jobs finish.  The same script also writes the full \(6\times6\) elastic tensors
-in GPa for each system.
+\subsection{Results}
+
+The Task E VASP calculations completed successfully for both systems.  The
+numerical results are summarized in Table~\ref{tab:task-e-results}.  Both Ni
+and NiO are mechanically stable according to the cubic Born stability criteria.
+The elastic-tensor calculations and subsequent analysis were performed by the
+scripts \texttt{common/E/prepare\_task\_e.py} and
+\texttt{common/E/analyze\_task\_e.py}.
+
+\begin{table}[h]
+\centering
+\caption{Task E mechanical properties derived from elastic tensors.}
+\label{tab:task-e-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrrrrrrl}
+\toprule
+System & Case & \(C_{11}\) & \(C_{12}\) & \(C_{44}\) & \(B\) & \(G\) & \(E\) &
+\(\nu\) & \(P\) & \(F_{\max}\) & \(E_{\text{tot}}\) & Stable? \\
+& & (GPa) & (GPa) & (GPa) & (GPa) & (GPa) & (GPa) & & (kB) & (eV/\AA) &
+(eV) & \\
+\midrule
+Ni  & \texttt{Ni\_PBE\_FM}    & 274.60 & 156.59 & 130.09 & 195.93 & 94.72 &
+244.72 & 0.292 & $-0.130$ & 0.1373 & $-21.879929$ & yes \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 334.80 & 108.93 & 95.70 & 184.22 & 102.26 &
+258.88 & 0.266 & 0.180 & 0.1247 & $-20.489778$ & yes \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The elastic constants show the characteristic patterns of each material.  For
+Ni, the diagonal elastic constants \(C_{11} = 274.60~\mathrm{GPa}\) and
+\(C_{12} = 156.59~\mathrm{GPa}\) reflect the high stiffness of the fcc metal,
+while \(C_{44} = 130.09~\mathrm{GPa}\) is the shear modulus for motion along the
+main crystal directions.  For NiO, the larger diagonal constant
+\(C_{11} = 334.80~\mathrm{GPa}\) reflects the stronger ionic bonding, but the
+lower off-diagonal constant \(C_{12} = 108.93~\mathrm{GPa}\) indicates reduced
+compressibility anisotropy compared to Ni.
+
+The full elastic constant tensors in GPa are given in
+Tables~\ref{tab:task-e-ni-tensor} and~\ref{tab:task-e-nio-tensor}.
+
+\begin{table}[h]
+\centering
+\caption{Elastic constant tensor for ferromagnetic PBE Ni (GPa).}
+\label{tab:task-e-ni-tensor}
+\resizebox{0.95\textwidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+& \(C_{xx}\) & \(C_{yy}\) & \(C_{zz}\) & \(C_{xy}\) & \(C_{yz}\) & \(C_{zx}\) \\
+\midrule
+\(C_{xx}\) & 274.597 & 156.594 & 156.594 & 0.000 & 0.000 & $-0.000$ \\
+\(C_{yy}\) & 156.594 & 274.597 & 156.594 & $-0.000$ & $-0.000$ & $-0.000$ \\
+\(C_{zz}\) & 156.594 & 156.594 & 274.597 & $-0.000$ & 0.000 & 0.000 \\
+\(C_{xy}\) & 0.000 & $-0.000$ & $-0.000$ & 130.086 & 0.000 & 0.000 \\
+\(C_{yz}\) & 0.000 & $-0.000$ & 0.000 & 0.000 & 130.086 & 0.000 \\
+\(C_{zx}\) & $-0.000$ & $-0.000$ & 0.000 & 0.000 & 0.000 & 130.086 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Elastic constant tensor for AFM-II DFT+\(U\) NiO (GPa).}
+\label{tab:task-e-nio-tensor}
+\resizebox{0.95\textwidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+& \(C_{xx}\) & \(C_{yy}\) & \(C_{zz}\) & \(C_{xy}\) & \(C_{yz}\) & \(C_{zx}\) \\
+\midrule
+\(C_{xx}\) & 334.760 & 108.917 & 108.910 & $-0.458$ & $-0.325$ & $-0.397$ \\
+\(C_{yy}\) & 108.917 & 334.821 & 108.954 & $-0.413$ & $-0.442$ & $-0.324$ \\
+\(C_{zz}\) & 108.910 & 108.954 & 334.813 & $-0.338$ & $-0.397$ & $-0.442$ \\
+\(C_{xy}\) & $-0.458$ & $-0.413$ & $-0.338$ & 95.699 & $-0.026$ & $-0.028$ \\
+\(C_{yz}\) & $-0.325$ & $-0.442$ & $-0.397$ & $-0.026$ & 95.682 & $-0.028$ \\
+\(C_{zx}\) & $-0.397$ & $-0.324$ & $-0.442$ & $-0.028$ & $-0.028$ & 95.732 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Discussion}
+
+Both calculated structures exhibit positive mechanical stability.  The bulk
+moduli are relatively close (\(B_{\mathrm{Ni}} = 195.93~\mathrm{GPa}\) and
+\(B_{\mathrm{NiO}} = 184.22~\mathrm{GPa}\)), suggesting comparable
+incompressibilities.  However, NiO has a slightly higher shear modulus
+(\(G_{\mathrm{NiO}} = 102.26~\mathrm{GPa}\) vs.\ \(G_{\mathrm{Ni}} = 94.72~\mathrm{GPa}\)),
+making it somewhat stiffer against shear deformations.
+
+The Young's modulus and Poisson's ratio are useful engineering parameters for
+small deformations.  Both materials show positive Poisson ratios in the range
+0.27--0.29, which is typical for cubic and rocksalt systems.  The higher Young's
+modulus of NiO (\(E = 258.88~\mathrm{GPa}\) vs.\ \(E = 244.72~\mathrm{GPa}\) for
+Ni) again reflects the stronger bonding and higher stiffness of the ionic oxide.
+
+The elastic constant tensor for Ni shows the expected cubic symmetry with
+negligible off-diagonal components, confirming that the relaxed ferromagnetic
+PBE structure is a well-ordered cubic crystal.  The NiO elastic tensor also
+displays approximate cubic symmetry in the diagonal block but shows small
+off-diagonal components ($< 0.5~\mathrm{GPa}$), which are likely due to
+numerical noise or minor symmetry breaking in the AFM-II magnetic ordering.
+
+These results establish that both relaxed structures are mechanically stable
+according to linear elasticity theory, validating the ground-state geometries
+determined in Task B as realistic equilibrium configurations.  The elastic
+constants can also serve as starting points for further calculations of phonon
+frequencies using linear-response theory or as input to continuum-mechanics
+simulations.

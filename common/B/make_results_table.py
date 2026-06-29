@@ -219,8 +219,10 @@ def build_rows() -> list[dict[str, str]]:
                 "Pressure, kB": format_value(pressure, 3),
                 "Stress xx yy zz xy yz zx, kB": stress or "pending",
                 "E_total, eV": format_value(total, 6),
-                "Total mag, muB": format_value(total_moment(static), 4),
-                "Local moments, muB": " ".join(f"{moment:.3f}" for moment in moments) if moments else "pending",
+                "Total mag, muB": "n/a" if case["ordering"] == "NM" else format_value(total_moment(static), 4),
+                "Local moments, muB": "n/a"
+                if case["ordering"] == "NM"
+                else (" ".join(f"{moment:.3f}" for moment in moments) if moments else "pending"),
                 "Cohesive energy, eV": format_value(cohesive_energy(case, total, e_ni_atom, e_o_atom), 6),
                 "Initial XYZ": initial_xyz,
                 "Relaxed XYZ": final_xyz,

@@ -170,15 +170,13 @@ def write_atom_poscar(path: Path, element: str) -> None:
 
 def split_o_potcar(combined: Path, output: Path) -> None:
     lines = combined.read_text(errors="ignore").splitlines(keepends=True)
-    titel_index = next((i for i, line in enumerate(lines) if "TITEL  = PAW_PBE O " in line), None)
-    if titel_index is None:
+    start = next((i for i, line in enumerate(lines) if line.strip().startswith("PAW_PBE O ")), None)
+    if start is None:
         raise ValueError(f"Could not find O POTCAR block in {combined}")
 
-    start = titel_index
-    while start > 0 and "PAW_PBE O " not in lines[start]:
-        start -= 1
-
-    end = next((i + 1 for i in range(titel_index, len(lines)) if "End of Dataset" in lines[i]), len(lines))
+    end = next((i + 1 for i in range(start, len(lines)) if "End of Dataset" in lines[i]), None)
+    if end is None:
+        raise ValueError(f"Could not find end of O POTCAR block in {combined}")
     block = "".join(lines[start:end])
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(block)

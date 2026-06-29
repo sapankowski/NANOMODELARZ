@@ -8,6 +8,12 @@ Prepare all Task B inputs:
 python3 common/B/prepare_task_b.py
 ```
 
+Check the generated inputs before submitting:
+
+```bash
+python3 common/B/check_task_b_inputs.py
+```
+
 Submit the VASP workflow:
 
 ```bash

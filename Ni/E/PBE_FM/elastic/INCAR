@@ -7,6 +7,7 @@ PREC   = Accurate
 ENCUT  = 520
 EDIFF  = 1E-8
 NELM   = 240
+NWRITE = 1
 LREAL  = .FALSE.
 LASPH  = .TRUE.
 ADDGRID = .TRUE.

@@ -102,10 +102,30 @@ System & Method/order & Total moment (\(\mu_B\)) & Local moments (\(\mu_B\)) & C
 \midrule
 Ni  & PBE NM        & --      & --                         & 4.778453 \\
 Ni  & PBE FM        & 2.5040  & 0.638, 0.638, 0.638, 0.638 & 4.836872 \\
-NiO & PBE FM        & 3.6109  & 1.479, 1.479, 0.280, 0.280 & pending \\
-NiO & PBE AFM-II    & 0.0000  & 1.350, -1.350, 0.000, 0.000 & pending \\
-NiO & DFT+\(U\) FM     & 4.0000  & 1.825, 1.825, 0.169, 0.169 & pending \\
-NiO & DFT+\(U\) AFM-II & 0.0000  & 1.748, -1.748, 0.000, 0.000 & pending \\
+NiO & PBE FM        & 3.6109  & 1.479, 1.479, 0.280, 0.280 & 9.303126 \\
+NiO & PBE AFM-II    & 0.0000  & 1.350, -1.350, 0.000, 0.000 & 9.567840 \\
+NiO & DFT+\(U\) FM     & 4.0000  & 1.825, 1.825, 0.169, 0.169 & 7.991495 \\
+NiO & DFT+\(U\) AFM-II & 0.0000  & 1.748, -1.748, 0.000, 0.000 & 8.065237 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Task B residual forces and final static stress tensors.  Stresses are
+reported in VASP order \(xx, yy, zz, xy, yz, zx\), in kB.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrl}
+\toprule
+System & Method/order & Max force (eV/\AA) & Stress tensor (kB) \\
+\midrule
+Ni  & PBE NM        & 0.0000 & \(-0.42, -0.42, -0.42, 0.00, -0.00, 0.00\) \\
+Ni  & PBE FM        & 0.0000 & \(-0.45, -0.45, -0.45, 0.00, 0.00, 0.00\) \\
+NiO & PBE FM        & 0.0000 & \(3.35, 3.35, 3.35, 0.04, 0.04, 0.04\) \\
+NiO & PBE AFM-II    & 0.0000 & \(-3.01, -3.01, -3.01, -1.64, -1.64, -1.64\) \\
+NiO & DFT+\(U\) FM     & 0.0000 & \(-0.04, -0.04, -0.04, 0.00, 0.00, 0.00\) \\
+NiO & DFT+\(U\) AFM-II & 0.0000 & \(-0.02, -0.02, -0.02, -0.45, -0.45, -0.45\) \\
 \bottomrule
 \end{tabular}%
 }
@@ -161,16 +181,14 @@ The cohesive energy was evaluated as
         E_{\mathrm{solid}}}{n_{\mathrm{Ni}}},
 \]
 where the denominator is the number of Ni atoms.  For pure Ni this is the usual
-cohesive energy per Ni atom.  The isolated Ni atom calculation finished, so the
-Ni cohesive energies are available.  The ferromagnetic Ni cohesive energy is
+cohesive energy per Ni atom.  For NiO, this denominator is also the number of
+NiO formula units in the AFM-II cell, so the values are cohesive energies per
+NiO formula unit.  The isolated Ni and O reference calculations both completed
+successfully using single-element PAW datasets.  The ferromagnetic Ni cohesive energy is
 \(4.836872~\mathrm{eV}\), slightly larger than the non-magnetic value
 \(4.778453~\mathrm{eV}\), consistent with ferromagnetic Ni being more stable.
-
-The isolated O atom calculation did not produce a complete final electronic
-energy in its \texttt{OUTCAR}; only the header was present.  Therefore the NiO
-cohesive energies are marked as pending in the result table.  They should not
-be interpreted until the isolated oxygen reference calculation is completed and
-the Task B table is regenerated.
+For the lowest-energy NiO case, DFT+\(U\) AFM-II, the cohesive energy is
+\(8.065237~\mathrm{eV}\) per NiO formula unit.
 
 \subsection{Discussion}
 
@@ -181,3 +199,19 @@ two Ni local moments cancel.  The DFT+\(U\) AFM-II calculation gives larger
 local Ni moments, about \(1.748~\mu_B\), than the PBE AFM-II calculation,
 about \(1.350~\mu_B\).  This is expected because the Hubbard correction
 localizes the Ni \(3d\) electrons more strongly.
+
+The comparison with literature values is also reasonable.  The relaxed Ni
+lattice parameter, \(a = 3.518~\mathrm{\AA}\), and the moment
+\(0.638~\mu_B\) per atom are close to the standard ferromagnetic fcc Ni values
+used in VASP benchmark examples \cite{vasp-fcc-ni}.  For NiO, the AFM-II
+ordering is the expected magnetic ground state for rocksalt NiO
+\cite{vasp-nio-magnetism}.  The DFT+\(U\) AFM-II local moment of
+\(1.748~\mu_B\) per Ni is larger than the PBE value and lies in the physically
+expected range for localized Ni \(3d\) moments in NiO; the use of a Dudarev
+Hubbard correction and the resulting enhancement of the Ni moment are
+consistent with the LSDA+\(U\) analysis of Dudarev \emph{et al.}
+\cite{dudarev}.  The relaxed AFM-II NiO cell has a rhombohedral magnetic-cell
+vector length of \(5.119~\mathrm{\AA}\), corresponding to an underlying
+rocksalt cubic lattice parameter of about \(4.18~\mathrm{\AA}\), close to the
+starting Materials Project rocksalt NiO structure and typical experimental
+values for bulk NiO \cite{mp-nio,dudarev}.
