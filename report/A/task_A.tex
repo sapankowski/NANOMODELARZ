@@ -73,9 +73,8 @@ NiO & \SI{675}{eV} & \(6\times6\times6\)   & \SI{0.937}{meV/atom} \\
 Although the formal convergence criterion gives the values in the table, the
 working input files kept conservative settings: \texttt{ENCUT = 520 eV} and
 \(24\times24\times24\) for Ni, and \texttt{ENCUT = 700 eV} and
-\(16\times16\times16\) for NiO.  These choices are more expensive than the
-minimum converged values, but they reduce the risk of numerical noise in later
-energy differences.
+\(16\times16\times16\) for NiO.  The reason for keeping this numerical margin
+is discussed below.
 
 \begin{figure}[htbp]
 \centering
