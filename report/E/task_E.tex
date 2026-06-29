@@ -12,12 +12,14 @@ modulus, Young's modulus, Poisson's ratio, and mechanical stability criteria.
 
 The mechanical properties were computed from VASP finite-difference elastic
 tensors using \texttt{IBRION = 6}, \texttt{ISIF = 3}, \texttt{NFREE = 2}, and a
-small strain step \texttt{POTIM = 0.015}.  The calculations used the same
-relaxed ground-state structures and magnetic configurations selected in Task B:
+small strain step \texttt{POTIM = 0.015}; this is the VASP finite-difference
+elastic-constant workflow for strained cells with stress evaluation enabled
+\cite{vasp-ibrion,vasp-isif}.  The calculations used the same relaxed
+ground-state structures and magnetic configurations selected in Task B:
 ferromagnetic PBE Ni and AFM-II DFT+\(U\) NiO.  For NiO, the two Ni sites were
 kept as formal \texttt{Ni\_up} and \texttt{Ni\_down} species with duplicated Ni
 PAW datasets so that the opposite magnetic moments remain explicit during the
-elastic-tensor calculation.
+elastic-tensor calculation \cite{vasp-nio-u}.
 
 Both elastic-tensor calculations used the same k-point mesh densities as the
 parent Task B calculations to ensure consistent electronic structure sampling.
@@ -37,16 +39,18 @@ and
 C_{44} = \langle C_{xy,xy}, C_{yz,yz}, C_{zx,zx}\rangle.
 \]
 The bulk modulus was evaluated as \(B=(C_{11}+2C_{12})/3\).  The shear modulus
-reported in the table is the Voigt--Reuss--Hill average for a cubic material,
-which was then used to compute Young's modulus and Poisson's ratio:
+reported in the table is the Voigt--Reuss--Hill average for a cubic material
+\cite{voigt,reuss,hill}, which was then used to compute Young's modulus and
+Poisson's ratio:
 \[
 E = \frac{9BG}{3B+G},\qquad
 \nu = \frac{3B-2G}{2(3B+G)}.
 \]
 A cubic material is mechanically stable when the Born stability conditions
-\(C_{11}-C_{12}>0\), \(C_{11}+2C_{12}>0\), and \(C_{44}>0\) are satisfied.
-These criteria ensure that the structure lies in a stable mechanical
-configuration within the linear-response regime.
+\(C_{11}-C_{12}>0\), \(C_{11}+2C_{12}>0\), and \(C_{44}>0\) are satisfied
+\cite{born-huang,mouhat-coudert}.  These criteria ensure that the elastic
+energy is positive for small homogeneous strains around the equilibrium
+structure.
 
 \subsection{Results}
 
@@ -79,13 +83,13 @@ NiO & \texttt{NiO\_DFTU\_AFM} & 334.80 & 108.93 & 95.70 & 184.22 & 102.26 &
 \end{table}
 
 The elastic constants show the characteristic patterns of each material.  For
-Ni, the diagonal elastic constants \(C_{11} = 274.60~\mathrm{GPa}\) and
-\(C_{12} = 156.59~\mathrm{GPa}\) reflect the high stiffness of the fcc metal,
-while \(C_{44} = 130.09~\mathrm{GPa}\) is the shear modulus for motion along the
-main crystal directions.  For NiO, the larger diagonal constant
-\(C_{11} = 334.80~\mathrm{GPa}\) reflects the stronger ionic bonding, but the
-lower off-diagonal constant \(C_{12} = 108.93~\mathrm{GPa}\) indicates reduced
-compressibility anisotropy compared to Ni.
+Ni, the diagonal elastic constant \(C_{11} = 274.60~\mathrm{GPa}\) and coupling
+constant \(C_{12} = 156.59~\mathrm{GPa}\) reflect the high stiffness of the fcc
+metal, while \(C_{44} = 130.09~\mathrm{GPa}\) describes the corresponding cubic
+shear response.  For NiO, the larger diagonal constant
+\(C_{11} = 334.80~\mathrm{GPa}\) indicates a stiffer uniaxial response, while
+the lower coupling constant \(C_{12} = 108.93~\mathrm{GPa}\) leads to a bulk
+modulus comparable to, but slightly smaller than, the Ni value.
 
 The full elastic constant tensors in GPa are given in
 Tables~\ref{tab:task-e-ni-tensor} and~\ref{tab:task-e-nio-tensor}.
@@ -132,7 +136,7 @@ Tables~\ref{tab:task-e-ni-tensor} and~\ref{tab:task-e-nio-tensor}.
 
 \subsection{Discussion}
 
-Both calculated structures exhibit positive mechanical stability.  The bulk
+Both calculated structures satisfy the cubic mechanical-stability criteria.  The bulk
 moduli are relatively close (\(B_{\mathrm{Ni}} = 195.93~\mathrm{GPa}\) and
 \(B_{\mathrm{NiO}} = 184.22~\mathrm{GPa}\)), suggesting comparable
 incompressibilities.  However, NiO has a slightly higher shear modulus
@@ -153,8 +157,7 @@ off-diagonal components ($< 0.5~\mathrm{GPa}$), which are likely due to
 numerical noise or minor symmetry breaking in the AFM-II magnetic ordering.
 
 These results establish that both relaxed structures are mechanically stable
-according to linear elasticity theory, validating the ground-state geometries
+according to linear elasticity theory, supporting the ground-state geometries
 determined in Task B as realistic equilibrium configurations.  The elastic
-constants can also serve as starting points for further calculations of phonon
-frequencies using linear-response theory or as input to continuum-mechanics
-simulations.
+constants can also be used to estimate long-wavelength acoustic response and as
+input to continuum-mechanics simulations.

@@ -83,7 +83,7 @@ def stress_pressure(path: Path) -> tuple[str, float | None]:
     if not matches:
         return "", None
     values = [float(item) for item in matches[-1].split()[:6]]
-    pressure = -(values[0] + values[1] + values[2]) / 3.0
+    pressure = (values[0] + values[1] + values[2]) / 3.0
     return " ".join(f"{value:.2f}" for value in values), pressure
 
 

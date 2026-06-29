@@ -81,16 +81,32 @@ appropriate for final static total energies when no forces are used
 System & Method/order & \(a\) (\AA) & \(b\) (\AA) & \(c\) (\AA) &
 \(\alpha=\beta=\gamma\) (deg) & \(E_{\mathrm{total}}\) (eV) & Pressure (kB) \\
 \midrule
-Ni  & PBE NM        & 3.5107 & 3.5107 & 3.5107 & 90.000 & -21.647642 &  0.416 \\
-Ni  & PBE FM        & 3.5180 & 3.5180 & 3.5180 & 90.000 & -21.881317 &  0.453 \\
-NiO & PBE FM        & 5.1576 & 5.1576 & 5.1576 & 33.560 & -22.966480 & -3.354 \\
-NiO & PBE AFM-II    & 5.1281 & 5.1281 & 5.1281 & 33.620 & -23.495908 &  3.010 \\
-NiO & DFT+\(U\) FM     & 5.1383 & 5.1383 & 5.1383 & 33.557 & -20.343218 &  0.041 \\
-NiO & DFT+\(U\) AFM-II & 5.1194 & 5.1194 & 5.1194 & 33.568 & -20.490702 &  0.016 \\
+Ni  & PBE NM        & 3.5107 & 3.5107 & 3.5107 & 90.000 & -21.647642 & -0.416 \\
+Ni  & PBE FM        & 3.5180 & 3.5180 & 3.5180 & 90.000 & -21.881317 & -0.453 \\
+NiO & PBE FM        & 5.1576 & 5.1576 & 5.1576 & 33.560 & -22.966480 &  3.354 \\
+NiO & PBE AFM-II    & 5.1281 & 5.1281 & 5.1281 & 33.620 & -23.495908 & -3.010 \\
+NiO & DFT+\(U\) FM     & 5.1383 & 5.1383 & 5.1383 & 33.557 & -20.343218 & -0.041 \\
+NiO & DFT+\(U\) AFM-II & 5.1194 & 5.1194 & 5.1194 & 33.568 & -20.490702 & -0.016 \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
+
+In VASP's stress convention, positive diagonal stress corresponds to positive
+\texttt{external pressure}, while negative diagonal stress corresponds to
+negative \texttt{external pressure}; equivalently, positive diagonal stress
+indicates a compressive state that tends to expand the cell, and negative
+diagonal stress indicates a tensile state that tends to reduce the cell volume
+\cite{vasp-isif}.  The PBE NiO ferromagnetic static calculation therefore has
+a small compressive residual pressure (about
+\(3.35~\mathrm{kB}=0.335~\mathrm{GPa}\)), while the PBE AFM-II static
+calculation has a small tensile residual pressure (about
+\(-3.01~\mathrm{kB}=-0.301~\mathrm{GPa}\)).  These residual stresses are minor
+compared with the elastic constants of NiO and arise after doing a final static
+single-point calculation with tetrahedron integration on the relaxed geometry.
+The much smaller residual pressures in the DFT+\(U\) NiO cases show that the
+final DFT+\(U\) geometries are closer to the zero-stress condition under the
+corresponding static settings.
 
 \begin{table}[h]
 \centering
