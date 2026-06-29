@@ -175,3 +175,25 @@ remaining error has dropped below \(1~\mathrm{meV/atom}\).  The non-monotonic
 behavior at low cutoff values is not by itself a problem: a plane-wave basis
 changes discretely as \texttt{ENCUT} is varied, and PAW total energies often
 show small oscillations before reaching the asymptotic convergence region.
+
+The higher converged cutoff for NiO than for Ni is physically reasonable.  In a
+PAW plane-wave calculation the required cutoff is controlled by the hardest
+species and by how rapidly the valence wave functions vary in the core and
+bonding regions.  The Ni calculation contains only metallic Ni--Ni bonding and
+uses a single Ni PAW dataset.  NiO contains oxygen, whose compact \(2p\) valence
+states and ionic Ni--O bonding usually require a larger plane-wave basis to
+represent the charge density and forces at the same accuracy.  In addition, the
+DFT+\(U\) treatment of NiO makes the occupied Ni \(3d\) states more localized,
+which can also make the total energy more sensitive to basis-set completeness.
+Therefore the fact that Ni is converged already near \(\texttt{ENCUT}=420\) eV,
+while NiO needs about \(\texttt{ENCUT}=675\) eV for the same
+\(1~\mathrm{meV/atom}\) tolerance, is not anomalous; it reflects the harder
+chemical environment and the presence of oxygen in the oxide.
+
+The final production cutoffs are intentionally not just the smallest acceptable
+values from the table.  Choosing \(\texttt{ENCUT}=520\) eV for Ni and
+\(\texttt{ENCUT}=700\) eV for NiO leaves a margin against small changes caused
+by relaxation, magnetism, DFT+\(U\), stress calculations, and phonon or elastic
+finite differences.  This is important because later tasks compare energy
+differences, forces, stresses, and derived response properties, all of which
+are more vulnerable to numerical noise than a single static total energy.

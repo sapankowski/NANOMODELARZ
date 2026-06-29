@@ -146,14 +146,22 @@ ground-state structures are dynamically stable within the harmonic
 approximation used here.  For Ni, the three \(\Gamma\)-point modes are the
 expected acoustic modes of the one-atom primitive fcc cell and are numerically
 zero.  The dispersion and PhDOS therefore support the stability of the relaxed
-ferromagnetic PBE Ni structure.
+ferromagnetic PBE Ni structure.  Because the primitive fcc cell contains only
+one atom, there are no optical branches for Ni at \(\Gamma\); the entire
+spectrum consists of the three acoustic branches.  This makes the absence of
+negative frequencies a direct check that the relaxed ferromagnetic structure is
+not sitting on a harmonic lattice instability.
 
 For NiO, the three acoustic \(\Gamma\)-point modes are also zero within
 numerical precision, and the optical modes are all positive.  This supports the
 dynamical stability of the DFT+\(U\) AFM-II NiO structure used as the Task B
-ground state.  The polar correction was included for NiO because the oxide is
-ionic; this is important for the long-range dipole contribution and LO--TO
-splitting near \(\Gamma\).  The main limitation of the present NiO calculation
+ground state.  The presence of nine optical modes follows from the four-ion
+magnetic primitive cell: \(3N=12\) total modes, three acoustic and nine optical.
+The highest optical modes are dominated by the lighter oxygen sublattice, while
+the lower-frequency modes contain more motion of the heavier Ni atoms.  The
+polar correction was included for NiO because the oxide is ionic; this is
+important for the long-range dipole contribution and LO--TO splitting near
+\(\Gamma\).  The main limitation of the present NiO calculation
 is that it uses the 4-ion magnetic primitive cell rather than a larger phonon
 supercell, because the tested 32-ion DFT+\(U\) supercell repeatedly triggered a
 \texttt{SIGFPE} during the initial SCF setup on the available VASP build.  A

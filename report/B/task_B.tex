@@ -206,15 +206,39 @@ successfully using single-element PAW datasets.  The ferromagnetic Ni cohesive e
 For the lowest-energy NiO case, DFT+\(U\) AFM-II, the cohesive energy is
 \(8.065237~\mathrm{eV}\) per NiO formula unit.
 
+The cohesive energies should be interpreted as internally consistent
+same-method quantities rather than as direct experimental heats of formation.
+They depend on the isolated-atom reference energies, spin states, PAW datasets,
+and on whether the DFT+\(U\) correction is applied.  This is why the PBE and
+DFT+\(U\) NiO cohesive energies are not meant to be compared as absolute
+thermochemical predictions across methods.  Within each method, however, the
+values have the expected sign and scale: the solids are bound relative to the
+separated atoms, and the magnetic ground-state choices give the larger
+cohesive energies.
+
 \subsection{Discussion}
 
 The Task B results are physically consistent.  Elemental Ni relaxes to a
 ferromagnetic solution with a finite moment of about \(0.638~\mu_B\) per atom.
+The energy lowering of \(58.4~\mathrm{meV}\) per atom relative to the
+non-magnetic state is not large on the scale of chemical bond energies, but it
+is large compared with the numerical convergence target from Task A.  The
+magnetic stabilization is therefore a real result of the calculation rather
+than a cutoff or k-point artifact.  The small increase of the relaxed lattice
+parameter from the non-magnetic to the ferromagnetic solution is also
+reasonable, because spin polarization changes the balance between exchange
+splitting, band filling, and bonding in the partly occupied Ni \(d\) bands.
+
 For NiO, the AFM-II states have nearly zero total magnetic moment because the
 two Ni local moments cancel.  The DFT+\(U\) AFM-II calculation gives larger
 local Ni moments, about \(1.748~\mu_B\), than the PBE AFM-II calculation,
 about \(1.350~\mu_B\).  This is expected because the Hubbard correction
-localizes the Ni \(3d\) electrons more strongly.
+localizes the Ni \(3d\) electrons more strongly.  The same localization also
+reduces the energy difference between the ferromagnetic and AFM-II NiO states
+from \(264.7~\mathrm{meV}\) per formula unit in PBE to
+\(73.7~\mathrm{meV}\) per formula unit in DFT+\(U\).  This does not change the
+qualitative conclusion: for both electronic-structure descriptions the
+AFM-II ordering remains the lowest of the magnetic states tested here.
 
 The comparison with literature values is also reasonable.  The relaxed Ni
 lattice parameter, \(a = 3.518~\mathrm{\AA}\), and the moment
@@ -231,3 +255,12 @@ vector length of \(5.119~\mathrm{\AA}\), corresponding to an underlying
 rocksalt cubic lattice parameter of about \(4.18~\mathrm{\AA}\), close to the
 starting Materials Project rocksalt NiO structure and typical experimental
 values for bulk NiO \cite{mp-nio,dudarev}.
+
+The residual stresses are also compatible with well-relaxed structures.  The
+largest pressure magnitude in the final static calculations is only about
+\(3.35~\mathrm{kB}\), or \(0.335~\mathrm{GPa}\), much smaller than the elastic
+moduli obtained in Task E.  The opposite pressure signs for PBE FM and PBE
+AFM-II NiO therefore should not be read as a qualitative contradiction; they
+mainly indicate that the final tetrahedron static calculation samples a
+slightly different stress point than the relaxation step, and that the two
+magnetic states prefer slightly different equilibrium volumes.
