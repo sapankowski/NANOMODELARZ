@@ -8,7 +8,7 @@ state considered in Task B.
 
 \subsection{Computational Setup}
 
-The phonon calculations use the finite-difference force-constant workflow in
+The phonon calculations use the finite-difference force-constant approach in
 VASP.  In this approach, VASP displaces atoms in a supercell, computes the
 resulting forces, constructs the second-order force constants, and diagonalizes
 the dynamical matrix.  The Ni finite-difference setup uses \texttt{IBRION = 5},
@@ -51,23 +51,6 @@ phonon runs through \texttt{LPHON\_POLAR}, \texttt{PHON\_DIELECTRIC}, and
 \texttt{PHON\_BORN\_CHARGES} so that the long-range dipole contribution and
 LO-TO splitting can be treated in the polar oxide \cite{vasp-phonon-dispersion,
 vasp-lepsilon}.
-
-\subsection{Prepared Workflow}
-
-The Task D input folders are:
-\begin{itemize}
-  \item \texttt{Ni/D/PBE\_FM}: ferromagnetic Ni phonons;
-  \item \texttt{NiO/D/DFTU\_AFM}: AFM-II DFT+\(U\) NiO phonons.
-\end{itemize}
-Each case contains \texttt{force\_constants}, \texttt{dispersion}, and
-\texttt{dos} subfolders.  The NiO case also contains \texttt{dielectric} and
-\texttt{preconverge} subfolders used to generate the polar correction input and
-the magnetic-cell restart files, respectively.
-
-After the VASP jobs finish, the analysis script
-\texttt{common/D/analyze\_task\_d.py} extracts the \(\Gamma\)-point
-frequencies, identifies imaginary modes, writes the summary tables, and creates
-the phonon dispersion and PhDOS plots.
 
 \subsection{Results}
 
@@ -176,5 +159,5 @@ supercell, because the tested 32-ion DFT+\(U\) supercell repeatedly triggered a
 \texttt{SIGFPE} during the initial SCF setup on the available VASP build.  A
 more converged production study would retry the larger supercell with another
 VASP build or with a carefully benchmarked alternative finite-displacement
-workflow, but the present calculation is sufficient to demonstrate positive
+procedure, but the present calculation is sufficient to demonstrate positive
 phonon frequencies for the selected AFM-II structure.

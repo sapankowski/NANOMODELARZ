@@ -13,7 +13,7 @@ modulus, Young's modulus, Poisson's ratio, and mechanical stability criteria.
 The mechanical properties were computed from VASP finite-difference elastic
 tensors using \texttt{IBRION = 6}, \texttt{ISIF = 3}, \texttt{NFREE = 2}, and a
 small strain step \texttt{POTIM = 0.015}; this is the VASP finite-difference
-elastic-constant workflow for strained cells with stress evaluation enabled
+elastic-constant approach for strained cells with stress evaluation enabled
 \cite{vasp-ibrion,vasp-isif}.  The calculations used the same relaxed
 ground-state structures and magnetic configurations selected in Task B:
 ferromagnetic PBE Ni and AFM-II DFT+\(U\) NiO.  For NiO, the two Ni sites were
@@ -57,9 +57,6 @@ structure.
 The Task E VASP calculations completed successfully for both systems.  The
 numerical results are summarized in Table~\ref{tab:task-e-results}.  Both Ni
 and NiO are mechanically stable according to the cubic Born stability criteria.
-The elastic-tensor calculations and subsequent analysis were performed by the
-scripts \texttt{common/E/prepare\_task\_e.py} and
-\texttt{common/E/analyze\_task\_e.py}.
 
 \begin{table}[h]
 \centering

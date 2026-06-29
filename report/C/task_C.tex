@@ -21,7 +21,7 @@ Each electronic-structure case was split into three calculations:
   \texttt{ICHARG = 11} along a high-symmetry k-point path.
 \end{itemize}
 
-This is the standard VASP workflow for band structures and DOS: first obtain a
+This is the standard VASP procedure for band structures and DOS: first obtain a
 self-consistent charge density on a full Brillouin-zone mesh, then reuse that
 charge density for non-self-consistent eigenvalues and DOS
 \cite{vasp-band-structure,vasp-icharg}.  \texttt{ICHARG = 11} keeps the charge
@@ -60,7 +60,7 @@ For fcc Ni, the path was
 \]
 This is a standard fcc path containing the high-symmetry points commonly used
 for fcc band structures; VASP also provides spin-polarized fcc Ni DOS and band
-structure examples as a reference workflow \cite{vasp-fcc-ni}.  The current
+structure examples as a reference calculation \cite{vasp-fcc-ni}.  The current
 VASP input uses the four-atom conventional cubic Ni cell, so the plotted bands
 are folded with respect to a primitive fcc cell.  The labels are therefore best
 understood as a conventional-cell representation of the fcc path rather than a
@@ -74,8 +74,8 @@ used.  Instead, a compact rhombohedral-style path was used:
   \Gamma - L - B - \Gamma - Z - F - \Gamma.
 \]
 This path was chosen to sample inequivalent directions of the reciprocal cell
-while keeping the calculation short enough for the project workflow.  A more
-strict production workflow would generate the path directly from the relaxed
+while keeping the calculation short enough for the present study.  A more
+strict production calculation would generate the path directly from the relaxed
 POSCAR using SeeK-path, but the present manually chosen path is sufficient for
 the qualitative comparison required here.
 
