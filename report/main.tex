@@ -46,12 +46,19 @@ represented explicitly.  This magnetic setup is consistent with the VASP NiO
 magnetism tutorial and with the known AFM-II ordering of bulk NiO
 \cite{vasp-nio-magnetism}.
 
-All input files, Slurm submission scripts, and post-processing scripts used for
-the calculations are provided in the project Git repository:
-\url{git@github.com:sapankowski/NANOMODELARZ.git}
+All input files, Slurm submission scripts, post-processing scripts, processed
+tables, and report figures used in this work are provided in the project Git
+repository: \url{git@github.com:sapankowski/NANOMODELARZ.git}
 (\url{https://github.com/sapankowski/NANOMODELARZ}).  The
 \texttt{submission\_inputs} directory contains a compact, task-organized copy
-of the VASP inputs and scripts for reproducibility.
+of the VASP inputs and scripts for reproducibility, while the tracked
+\texttt{outputs} and \texttt{report/figures} directories contain the processed
+CSV/Markdown tables and plotted figures used in the report.  Very large raw
+VASP artifacts such as \texttt{WAVECAR}, \texttt{CHGCAR}, full
+\texttt{vasprun.xml}/\texttt{vaspout.h5} files, and large raw \texttt{OUTCAR}
+files are not included in the repository because the complete raw
+\texttt{outputs} tree is several gigabytes and contains files above the GitHub
+single-file size limit.
 
 \section{Task A}
 \input{A/task_A}
