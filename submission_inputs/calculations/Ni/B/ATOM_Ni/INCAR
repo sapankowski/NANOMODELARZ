@@ -1,0 +1,23 @@
+SYSTEM = isolated Ni atom
+
+ISTART = 0
+ICHARG = 2
+ISPIN  = 2
+MAGMOM = 2.0
+
+PREC   = Accurate
+ENCUT  = 700
+EDIFF  = 1E-7
+NELM   = 200
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+
+IBRION = -1
+NSW    = 0
+
+ISMEAR = 0
+SIGMA  = 0.05
+
+LORBIT = 11
+LWAVE  = .FALSE.
+LCHARG = .FALSE.

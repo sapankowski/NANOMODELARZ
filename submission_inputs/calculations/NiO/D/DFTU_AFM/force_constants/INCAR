@@ -1,0 +1,41 @@
+SYSTEM = NiO_DFTU_AFM finite-difference phonons
+
+ISTART = 1
+ICHARG = 1
+
+PREC   = Accurate
+ENCUT  = 700
+EDIFF  = 1E-8
+NELM   = 240
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+ADDGRID = .FALSE.
+
+ISPIN  = 2
+MAGMOM = 2.0 -2.0 2*0.0
+
+LDAU      = .TRUE.
+LDAUTYPE  = 2
+LDAUL     = 2 2 -1
+LDAUU     = 7.2 7.2 0.0
+LDAUJ     = 1.0 1.0 0.0
+LDAUPRINT = 0
+LMAXMIX   = 4
+
+AMIX      = 0.2
+BMIX      = 0.00001
+AMIX_MAG  = 0.8
+BMIX_MAG  = 0.00001
+
+ISMEAR = 0
+SIGMA  = 0.05
+
+LWAVE  = .FALSE.
+LCHARG = .FALSE.
+
+IBRION = 6
+NFREE  = 2
+POTIM  = 0.015
+NSW    = 1
+ISIF   = 2
+ISYM   = 2

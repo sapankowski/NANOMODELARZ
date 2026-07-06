@@ -81,26 +81,30 @@ appropriate for final static total energies when no forces are used
 System & Method/order & \(a\) (\AA) & \(b\) (\AA) & \(c\) (\AA) &
 \(\alpha=\beta=\gamma\) (deg) & \(E_{\mathrm{total}}\) (eV) & Pressure (kB) \\
 \midrule
-Ni  & PBE NM        & 3.5107 & 3.5107 & 3.5107 & 90.000 & -21.647642 & -0.416 \\
-Ni  & PBE FM        & 3.5180 & 3.5180 & 3.5180 & 90.000 & -21.881317 & -0.453 \\
-NiO & PBE FM        & 5.1576 & 5.1576 & 5.1576 & 33.560 & -22.966480 &  3.354 \\
-NiO & PBE AFM-II    & 5.1281 & 5.1281 & 5.1281 & 33.620 & -23.495908 & -3.010 \\
-NiO & DFT+\(U\) FM     & 5.1383 & 5.1383 & 5.1383 & 33.557 & -20.343218 & -0.041 \\
-NiO & DFT+\(U\) AFM-II & 5.1194 & 5.1194 & 5.1194 & 33.568 & -20.490702 & -0.016 \\
+Ni  & PBE NM        & 3.511 & 3.511 & 3.511 & 90.00 & -21.648 & -0.42 \\
+Ni  & PBE FM        & 3.518 & 3.518 & 3.518 & 90.00 & -21.881 & -0.45 \\
+NiO & PBE FM        & 5.158 & 5.158 & 5.158 & 33.56 & -22.966 &  3.35 \\
+NiO & PBE AFM-II    & 5.128 & 5.128 & 5.128 & 33.62 & -23.496 & -3.01 \\
+NiO & DFT+\(U\) FM     & 5.138 & 5.138 & 5.138 & 33.56 & -20.343 & -0.04 \\
+NiO & DFT+\(U\) AFM-II & 5.119 & 5.119 & 5.119 & 33.57 & -20.491 & -0.02 \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
-In VASP's stress convention, positive diagonal stress corresponds to positive
-\texttt{external pressure}, while negative diagonal stress corresponds to
-negative \texttt{external pressure}; equivalently, positive diagonal stress
-indicates a compressive state that tends to expand the cell, and negative
-diagonal stress indicates a tensile state that tends to reduce the cell volume
-\cite{vasp-isif}.  The PBE NiO ferromagnetic static calculation therefore has
-a small compressive residual pressure (about
-\(3.35~\mathrm{kB}=0.335~\mathrm{GPa}\)), while the PBE AFM-II static
-calculation has a small tensile residual pressure (about
+In VASP's sign convention, positive pressure corresponds to compressive stress,
+while negative pressure corresponds to tensile stress.  Thus, if the stress
+reported for a relaxed cell has positive diagonal components, the cell is
+internally compressed and would tend to expand if allowed to relax at zero
+external pressure.  Conversely, negative diagonal components indicate tensile
+stress and the cell would tend to contract \cite{vasp-isif}.  This should be
+distinguished from applying an external pressure with \texttt{PSTRESS}: a
+positive \texttt{PSTRESS} represents compressive loading and tends to reduce
+the relaxed cell volume, whereas a negative \texttt{PSTRESS} represents tensile
+loading and tends to increase it \cite{vasp-pstress}.  The PBE NiO
+ferromagnetic static calculation therefore has a small compressive residual
+pressure (about \(3.35~\mathrm{kB}=0.335~\mathrm{GPa}\)), while the PBE AFM-II
+static calculation has a small tensile residual pressure (about
 \(-3.01~\mathrm{kB}=-0.301~\mathrm{GPa}\)).  These residual stresses are minor
 compared with the elastic constants of NiO and arise after doing a final static
 single-point calculation with tetrahedron integration on the relaxed geometry.
@@ -116,12 +120,12 @@ corresponding static settings.
 \toprule
 System & Method/order & Total moment (\(\mu_B\)) & Local moments (\(\mu_B\)) & Cohesive energy (eV) \\
 \midrule
-Ni  & PBE NM        & --      & --                         & 4.778453 \\
-Ni  & PBE FM        & 2.5040  & 0.638, 0.638, 0.638, 0.638 & 4.836872 \\
-NiO & PBE FM        & 3.6109  & 1.479, 1.479, 0.280, 0.280 & 9.303126 \\
-NiO & PBE AFM-II    & 0.0000  & 1.350, -1.350, 0.000, 0.000 & 9.567840 \\
-NiO & DFT+\(U\) FM     & 4.0000  & 1.825, 1.825, 0.169, 0.169 & 7.991495 \\
-NiO & DFT+\(U\) AFM-II & 0.0000  & 1.748, -1.748, 0.000, 0.000 & 8.065237 \\
+Ni  & PBE NM        & --   & --                         & 4.78 \\
+Ni  & PBE FM        & 2.50 & 0.64, 0.64, 0.64, 0.64    & 4.84 \\
+NiO & PBE FM        & 3.61 & 1.48, 1.48, 0.28, 0.28    & 9.30 \\
+NiO & PBE AFM-II    & 0.00 & 1.35, -1.35, 0.00, 0.00   & 9.57 \\
+NiO & DFT+\(U\) FM     & 4.00 & 1.83, 1.83, 0.17, 0.17    & 7.99 \\
+NiO & DFT+\(U\) AFM-II & 0.00 & 1.75, -1.75, 0.00, 0.00   & 8.07 \\
 \bottomrule
 \end{tabular}%
 }
@@ -136,12 +140,12 @@ reported in VASP order \(xx, yy, zz, xy, yz, zx\), in kB.}
 \toprule
 System & Method/order & Max force (eV/\AA) & Stress tensor (kB) \\
 \midrule
-Ni  & PBE NM        & 0.0000 & \(-0.42, -0.42, -0.42, 0.00, -0.00, 0.00\) \\
-Ni  & PBE FM        & 0.0000 & \(-0.45, -0.45, -0.45, 0.00, 0.00, 0.00\) \\
-NiO & PBE FM        & 0.0000 & \(3.35, 3.35, 3.35, 0.04, 0.04, 0.04\) \\
-NiO & PBE AFM-II    & 0.0000 & \(-3.01, -3.01, -3.01, -1.64, -1.64, -1.64\) \\
-NiO & DFT+\(U\) FM     & 0.0000 & \(-0.04, -0.04, -0.04, 0.00, 0.00, 0.00\) \\
-NiO & DFT+\(U\) AFM-II & 0.0000 & \(-0.02, -0.02, -0.02, -0.45, -0.45, -0.45\) \\
+Ni  & PBE NM        & 0.000 & \(-0.42, -0.42, -0.42, 0.00, 0.00, 0.00\) \\
+Ni  & PBE FM        & 0.000 & \(-0.45, -0.45, -0.45, 0.00, 0.00, 0.00\) \\
+NiO & PBE FM        & 0.000 & \(3.35, 3.35, 3.35, 0.04, 0.04, 0.04\) \\
+NiO & PBE AFM-II    & 0.000 & \(-3.01, -3.01, -3.01, -1.64, -1.64, -1.64\) \\
+NiO & DFT+\(U\) FM     & 0.000 & \(-0.04, -0.04, -0.04, 0.00, 0.00, 0.00\) \\
+NiO & DFT+\(U\) AFM-II & 0.000 & \(-0.02, -0.02, -0.02, -0.45, -0.45, -0.45\) \\
 \bottomrule
 \end{tabular}%
 }
@@ -165,25 +169,15 @@ planes; O atoms carry no assigned spin moment.}
 \end{figure}
 
 The Ni results show that the ferromagnetic state is lower in energy than the
-non-magnetic state by
-\[
-  -21.881317 - (-21.647642) = -0.233675~\mathrm{eV}
-\]
-per four-atom cell, or approximately \(58.4~\mathrm{meV}\) per Ni atom.  This
+non-magnetic state by approximately \(58~\mathrm{meV}\) per Ni atom.  This
 confirms that the ferromagnetic phase is the stable magnetic solution among the
 two Ni states tested here.
 
 For NiO, AFM-II is lower in energy than the ferromagnetic state for both PBE
-and DFT+\(U\).  In PBE, the energy lowering is
-\[
-  -23.495908 - (-22.966480) = -0.529428~\mathrm{eV}
-\]
-per two-NiO cell, or \(264.7~\mathrm{meV}\) per NiO formula unit.  With
-DFT+\(U\), the energy lowering is
-\[
-  -20.490702 - (-20.343218) = -0.147484~\mathrm{eV}
-\]
-per two-NiO cell, or \(73.7~\mathrm{meV}\) per NiO formula unit.  Therefore,
+and DFT+\(U\).  In PBE, the energy lowering is about
+\(265~\mathrm{meV}\) per NiO formula unit, i.e. per magnetic Ni ion.  With
+DFT+\(U\), the energy lowering is about \(74~\mathrm{meV}\) per NiO formula
+unit.  Therefore,
 among the magnetic states tested in this project, AFM-II is the most stable
 ordering of NiO.
 
@@ -200,11 +194,11 @@ where the denominator is the number of Ni atoms.  For pure Ni this is the usual
 cohesive energy per Ni atom.  For NiO, this denominator is also the number of
 NiO formula units in the AFM-II cell, so the values are cohesive energies per
 NiO formula unit.  The isolated Ni and O reference calculations both completed
-successfully using single-element PAW datasets.  The ferromagnetic Ni cohesive energy is
-\(4.836872~\mathrm{eV}\), slightly larger than the non-magnetic value
-\(4.778453~\mathrm{eV}\), consistent with ferromagnetic Ni being more stable.
+successfully using single-element PAW datasets.  The ferromagnetic Ni cohesive
+energy is \(4.84~\mathrm{eV}\), slightly larger than the non-magnetic value
+\(4.78~\mathrm{eV}\), consistent with ferromagnetic Ni being more stable.
 For the lowest-energy NiO case, DFT+\(U\) AFM-II, the cohesive energy is
-\(8.065237~\mathrm{eV}\) per NiO formula unit.
+\(8.07~\mathrm{eV}\) per NiO formula unit.
 
 The cohesive energies should be interpreted as internally consistent
 same-method quantities rather than as direct experimental heats of formation.
@@ -219,8 +213,8 @@ cohesive energies.
 \subsection{Discussion}
 
 The Task B results are physically consistent.  Elemental Ni relaxes to a
-ferromagnetic solution with a finite moment of about \(0.638~\mu_B\) per atom.
-The energy lowering of \(58.4~\mathrm{meV}\) per atom relative to the
+ferromagnetic solution with a finite moment of about \(0.64~\mu_B\) per atom.
+The energy lowering of \(58~\mathrm{meV}\) per atom relative to the
 non-magnetic state is not large on the scale of chemical bond energies, but it
 is large compared with the numerical convergence target from Task A.  The
 magnetic stabilization is therefore a real result of the calculation rather
@@ -231,27 +225,28 @@ splitting, band filling, and bonding in the partly occupied Ni \(d\) bands.
 
 For NiO, the AFM-II states have nearly zero total magnetic moment because the
 two Ni local moments cancel.  The DFT+\(U\) AFM-II calculation gives larger
-local Ni moments, about \(1.748~\mu_B\), than the PBE AFM-II calculation,
-about \(1.350~\mu_B\).  This is expected because the Hubbard correction
+local Ni moments, about \(1.75~\mu_B\), than the PBE AFM-II calculation,
+about \(1.35~\mu_B\).  This is expected because the Hubbard correction
 localizes the Ni \(3d\) electrons more strongly.  The same localization also
 reduces the energy difference between the ferromagnetic and AFM-II NiO states
-from \(264.7~\mathrm{meV}\) per formula unit in PBE to
-\(73.7~\mathrm{meV}\) per formula unit in DFT+\(U\).  This does not change the
+from \(265~\mathrm{meV}\) per formula unit in PBE to
+\(74~\mathrm{meV}\) per formula unit in DFT+\(U\).  This does not change the
 qualitative conclusion: for both electronic-structure descriptions the
 AFM-II ordering remains the lowest of the magnetic states tested here.
 
 The comparison with literature values is also reasonable.  The relaxed Ni
-lattice parameter, \(a = 3.518~\mathrm{\AA}\), and the moment
-\(0.638~\mu_B\) per atom are close to the standard ferromagnetic fcc Ni values
-used in VASP benchmark examples \cite{vasp-fcc-ni}.  For NiO, the AFM-II
-ordering is the expected magnetic ground state for rocksalt NiO
-\cite{vasp-nio-magnetism}.  The DFT+\(U\) AFM-II local moment of
-\(1.748~\mu_B\) per Ni is larger than the PBE value and lies in the physically
-expected range for localized Ni \(3d\) moments in NiO; the use of a Dudarev
-Hubbard correction and the resulting enhancement of the Ni moment are
-consistent with the LSDA+\(U\) analysis of Dudarev \emph{et al.}
-\cite{dudarev}.  The relaxed AFM-II NiO cell has a rhombohedral magnetic-cell
-vector length of \(5.119~\mathrm{\AA}\), corresponding to an underlying
-rocksalt cubic lattice parameter of about \(4.18~\mathrm{\AA}\), close to the
-starting Materials Project rocksalt NiO structure and typical experimental
-values for bulk NiO \cite{mp-nio,dudarev}.
+lattice parameter, \(a = 3.518~\mathrm{\AA}\), is close to the experimental
+room-temperature fcc value of about \(3.52~\mathrm{\AA}\), and the calculated
+moment of \(0.64~\mu_B\) per atom is close to the measured ordered moment of
+about \(0.6~\mu_B\) for bulk Ni \cite{kittel,crangle-goodman}.  For NiO, the
+AFM-II ordering is the expected magnetic ground state for rocksalt NiO, as
+established by neutron diffraction and also used in the VASP tutorial
+\cite{roth-nio,vasp-nio-magnetism}.  The DFT+\(U\) AFM-II local moment of
+\(1.75~\mu_B\) per Ni is larger than the PBE value and approaches the
+experimental NiO ordered moment of roughly \(1.9~\mu_B\), while the remaining
+underestimate is typical for PAW sphere-projected local moments
+\cite{roth-nio,dudarev}.  The relaxed AFM-II NiO cell has a rhombohedral
+magnetic-cell vector length of \(5.119~\mathrm{\AA}\), corresponding to an
+underlying rocksalt cubic lattice parameter of about \(4.18~\mathrm{\AA}\),
+close to experimental bulk NiO lattice constants near \(4.17~\mathrm{\AA}\)
+\cite{roth-nio,mp-nio}.

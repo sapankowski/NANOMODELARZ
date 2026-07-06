@@ -1,0 +1,43 @@
+SYSTEM = NiO_DFTU_AFM elastic constants
+
+ISTART = 0
+ICHARG = 2
+
+PREC   = Accurate
+ENCUT  = 700
+EDIFF  = 1E-8
+NELM   = 240
+NWRITE = 1
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+ADDGRID = .TRUE.
+
+ISPIN  = 2
+MAGMOM = 2.0 -2.0 2*0.0
+
+LDAU      = .TRUE.
+LDAUTYPE  = 2
+LDAUL     = 2 2 -1
+LDAUU     = 7.2 7.2 0.0
+LDAUJ     = 1.0 1.0 0.0
+LDAUPRINT = 0
+LMAXMIX   = 4
+
+AMIX      = 0.2
+BMIX      = 0.00001
+AMIX_MAG  = 0.8
+BMIX_MAG  = 0.00001
+
+IBRION = 6
+ISIF   = 3
+NSW    = 1
+NFREE  = 2
+POTIM  = 0.015
+ISYM   = 0
+
+ISMEAR = 0
+SIGMA  = 0.05
+
+LORBIT = 11
+LWAVE  = .FALSE.
+LCHARG = .FALSE.

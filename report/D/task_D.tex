@@ -14,8 +14,10 @@ resulting forces, constructs the second-order force constants, and diagonalizes
 the dynamical matrix.  The Ni finite-difference setup uses \texttt{IBRION = 5},
 \texttt{NFREE = 2}, \texttt{POTIM = 0.015}~\AA, and \texttt{ISYM = 0}.  The NiO
 force-constant calculation uses \texttt{IBRION = 6} and \texttt{ISYM = 2}, so
-VASP reduces the DFT+\(U\) finite displacements using the magnetic-cell symmetry
-\cite{vasp-phonon-fd}.
+VASP reduces the DFT+\(U\) finite displacements using the magnetic-cell
+symmetry \cite{vasp-phonon-fd}.  This choice was the one that ran successfully
+for the primitive magnetic cell, although \texttt{ISYM = 0} would be the safer
+setting for a more exhaustive displaced-supercell study of an AFM+\(U\) system.
 
 The Ni calculation uses a \(2\times2\times2\) phonon supercell constructed from
 the relaxed Task B cell.  For Ni, the relaxed conventional fcc cell is first
@@ -43,6 +45,14 @@ build the static DFT+\(U\) initialization repeatedly terminated with a
 \texttt{SIGFPE} before the first electronic iteration.  The primitive-cell setup
 therefore provides a runnable finite-difference calculation consistent with the
 standard AFM-II NiO cell used in the VASP DFT+\(U\) examples.
+The larger-cell failure was not fully diagnosed.  Plausible causes include a
+\texttt{MAGMOM} sequence that did not follow the 32-ion atom order, inconsistent
+\texttt{Ni\_up}/\texttt{Ni\_down}/O ordering between \texttt{POSCAR} and
+\texttt{POTCAR}, incomplete DFT+\(U\) arrays such as using
+\texttt{LDAUL = 2 -1} rather than \texttt{LDAUL = 2 2 -1} for separate
+magnetic Ni species, an unsafe symmetry reduction of displaced AFM+\(U\)
+structures, or incompatible \texttt{WAVECAR}/\texttt{CHGCAR} restart files from
+a different cell.
 
 For NiO, a separate primitive-cell linear-response calculation with
 \texttt{LEPSILON = .TRUE.} is included to compute the ion-clamped dielectric
@@ -60,8 +70,8 @@ calculation used the DFT+\(U\) AFM-II force constants with the polar correction
 from the Born effective charges and electronic dielectric tensor.  The
 resulting \(\Gamma\)-point phonon summaries are given in
 Tables~\ref{tab:task-d-summary} and~\ref{tab:task-d-gamma}.  No imaginary modes
-were found in either system.  The small values reported as \(-0.0000\) or
-\(0.0000~\mathrm{THz}\) are numerical acoustic modes at \(\Gamma\), not
+were found in either system.  The small values reported as
+\(0.000~\mathrm{THz}\) are numerical acoustic modes at \(\Gamma\), not
 physical instabilities.
 
 \begin{table}[h]
@@ -91,11 +101,11 @@ calculations.}
 \toprule
 System & Case & Mode(s) & Frequency or frequencies \\
 \midrule
-Ni  & \texttt{Ni\_PBE\_FM}    & 1--3  & \(-0.000000\), \(-0.000000\), \(0.000000~\mathrm{THz}\) \\
-NiO & \texttt{NiO\_DFTU\_AFM} & 1--3  & \(0.000000\), \(0.000000\), \(0.000000~\mathrm{THz}\) \\
-NiO & \texttt{NiO\_DFTU\_AFM} & 4--6  & \(5.762304\), \(5.762304\), \(9.516525~\mathrm{THz}\) \\
-NiO & \texttt{NiO\_DFTU\_AFM} & 7--9  & \(9.723637\), \(9.723637\), \(10.842726~\mathrm{THz}\) \\
-NiO & \texttt{NiO\_DFTU\_AFM} & 10--12 & \(11.083248\), \(15.977053\), \(17.063302~\mathrm{THz}\) \\
+Ni  & \texttt{Ni\_PBE\_FM}    & 1--3  & \(0.000\), \(0.000\), \(0.000~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 1--3  & \(0.000\), \(0.000\), \(0.000~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 4--6  & \(5.762\), \(5.762\), \(9.517~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 7--9  & \(9.724\), \(9.724\), \(10.843~\mathrm{THz}\) \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 10--12 & \(11.083\), \(15.977\), \(17.063~\mathrm{THz}\) \\
 \bottomrule
 \end{tabular}%
 }
@@ -159,13 +169,22 @@ ground state.  The presence of nine optical modes follows from the four-ion
 magnetic primitive cell: \(3N=12\) total modes, three acoustic and nine optical.
 The highest optical modes are dominated by the lighter oxygen sublattice, while
 the lower-frequency modes contain more motion of the heavier Ni atoms.  The
+calculated NiO optical frequencies span roughly \(192\)--\(569~\mathrm{cm^{-1}}\),
+which is the correct broad scale for NiO optical lattice vibrations observed in
+infrared, Raman, and neutron studies, although those experiments also show
+spin-phonon effects and temperature-dependent splittings that are outside the
+present harmonic calculation \cite{lacerda-nio-phonon,sun-nio-phonon}.  The
 polar correction was included for NiO because the oxide is ionic; this is
 important for the long-range dipole contribution and LO--TO splitting near
-\(\Gamma\).  The main limitation of the present NiO calculation
-is that it uses the 4-ion magnetic primitive cell rather than a larger phonon
-supercell, because the tested 32-ion DFT+\(U\) supercell repeatedly triggered a
-\texttt{SIGFPE} during the initial SCF setup on the available VASP build.  A
-more converged production study would retry the larger supercell with another
-VASP build or with a carefully benchmarked alternative finite-displacement
-procedure, but the present calculation is sufficient to demonstrate positive
-phonon frequencies for the selected AFM-II structure.
+\(\Gamma\).
+
+The main limitation of the present NiO calculation is that it uses the
+4-ion magnetic primitive cell rather than a larger phonon supercell, because
+the tested 32-ion DFT+\(U\) supercell repeatedly triggered a \texttt{SIGFPE}
+during the initial SCF setup on the available VASP build.  Therefore the NiO
+phonon dispersion and optical frequencies should not be treated as fully
+converged quantitative predictions.  They are useful as a stability check for
+the selected AFM-II structure, but a production-quality phonon study should
+debug the 32-ion setup, rerun with the correct AFM species/order and DFT+\(U\)
+arrays, preferably use \texttt{ISYM = 0} for displaced magnetic structures, and
+then test the convergence of the force constants with supercell size.

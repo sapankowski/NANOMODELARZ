@@ -70,10 +70,10 @@ System & Case & \(C_{11}\) & \(C_{12}\) & \(C_{44}\) & \(B\) & \(G\) & \(E\) &
 & & (GPa) & (GPa) & (GPa) & (GPa) & (GPa) & (GPa) & & (kB) & (eV/\AA) &
 (eV) & \\
 \midrule
-Ni  & \texttt{Ni\_PBE\_FM}    & 274.60 & 156.59 & 130.09 & 195.93 & 94.72 &
-244.72 & 0.292 & $-0.130$ & 0.1373 & $-21.879929$ & yes \\
-NiO & \texttt{NiO\_DFTU\_AFM} & 334.80 & 108.93 & 95.70 & 184.22 & 102.26 &
-258.88 & 0.266 & 0.180 & 0.1247 & $-20.489778$ & yes \\
+Ni  & \texttt{Ni\_PBE\_FM}    & 274.6 & 156.6 & 130.1 & 195.9 & 94.7 &
+244.7 & 0.292 & $-0.13$ & 0.14 & $-21.880$ & yes \\
+NiO & \texttt{NiO\_DFTU\_AFM} & 334.8 & 108.9 & 95.7 & 184.2 & 102.3 &
+258.9 & 0.266 & 0.18 & 0.12 & $-20.490$ & yes \\
 \bottomrule
 \end{tabular}%
 }
@@ -92,12 +92,12 @@ Tables~\ref{tab:task-e-ni-tensor} and~\ref{tab:task-e-nio-tensor}.
 \toprule
 & \(C_{xx}\) & \(C_{yy}\) & \(C_{zz}\) & \(C_{xy}\) & \(C_{yz}\) & \(C_{zx}\) \\
 \midrule
-\(C_{xx}\) & 274.597 & 156.594 & 156.594 & 0.000 & 0.000 & $-0.000$ \\
-\(C_{yy}\) & 156.594 & 274.597 & 156.594 & $-0.000$ & $-0.000$ & $-0.000$ \\
-\(C_{zz}\) & 156.594 & 156.594 & 274.597 & $-0.000$ & 0.000 & 0.000 \\
-\(C_{xy}\) & 0.000 & $-0.000$ & $-0.000$ & 130.086 & 0.000 & 0.000 \\
-\(C_{yz}\) & 0.000 & $-0.000$ & 0.000 & 0.000 & 130.086 & 0.000 \\
-\(C_{zx}\) & $-0.000$ & $-0.000$ & 0.000 & 0.000 & 0.000 & 130.086 \\
+\(C_{xx}\) & 274.6 & 156.6 & 156.6 & 0.0 & 0.0 & 0.0 \\
+\(C_{yy}\) & 156.6 & 274.6 & 156.6 & 0.0 & 0.0 & 0.0 \\
+\(C_{zz}\) & 156.6 & 156.6 & 274.6 & 0.0 & 0.0 & 0.0 \\
+\(C_{xy}\) & 0.0 & 0.0 & 0.0 & 130.1 & 0.0 & 0.0 \\
+\(C_{yz}\) & 0.0 & 0.0 & 0.0 & 0.0 & 130.1 & 0.0 \\
+\(C_{zx}\) & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 130.1 \\
 \bottomrule
 \end{tabular}%
 }
@@ -112,12 +112,12 @@ Tables~\ref{tab:task-e-ni-tensor} and~\ref{tab:task-e-nio-tensor}.
 \toprule
 & \(C_{xx}\) & \(C_{yy}\) & \(C_{zz}\) & \(C_{xy}\) & \(C_{yz}\) & \(C_{zx}\) \\
 \midrule
-\(C_{xx}\) & 334.760 & 108.917 & 108.910 & $-0.458$ & $-0.325$ & $-0.397$ \\
-\(C_{yy}\) & 108.917 & 334.821 & 108.954 & $-0.413$ & $-0.442$ & $-0.324$ \\
-\(C_{zz}\) & 108.910 & 108.954 & 334.813 & $-0.338$ & $-0.397$ & $-0.442$ \\
-\(C_{xy}\) & $-0.458$ & $-0.413$ & $-0.338$ & 95.699 & $-0.026$ & $-0.028$ \\
-\(C_{yz}\) & $-0.325$ & $-0.442$ & $-0.397$ & $-0.026$ & 95.682 & $-0.028$ \\
-\(C_{zx}\) & $-0.397$ & $-0.324$ & $-0.442$ & $-0.028$ & $-0.028$ & 95.732 \\
+\(C_{xx}\) & 334.8 & 108.9 & 108.9 & $-0.5$ & $-0.3$ & $-0.4$ \\
+\(C_{yy}\) & 108.9 & 334.8 & 109.0 & $-0.4$ & $-0.4$ & $-0.3$ \\
+\(C_{zz}\) & 108.9 & 109.0 & 334.8 & $-0.3$ & $-0.4$ & $-0.4$ \\
+\(C_{xy}\) & $-0.5$ & $-0.4$ & $-0.3$ & 95.7 & 0.0 & 0.0 \\
+\(C_{yz}\) & $-0.3$ & $-0.4$ & $-0.4$ & 0.0 & 95.7 & 0.0 \\
+\(C_{zx}\) & $-0.4$ & $-0.3$ & $-0.4$ & 0.0 & 0.0 & 95.7 \\
 \bottomrule
 \end{tabular}%
 }
@@ -126,17 +126,17 @@ Tables~\ref{tab:task-e-ni-tensor} and~\ref{tab:task-e-nio-tensor}.
 \subsection{Discussion}
 
 Both calculated structures satisfy the cubic mechanical-stability criteria.  The
-bulk moduli are relatively close (\(B_{\mathrm{Ni}} = 195.93~\mathrm{GPa}\) and
-\(B_{\mathrm{NiO}} = 184.22~\mathrm{GPa}\)), suggesting comparable
+bulk moduli are relatively close (\(B_{\mathrm{Ni}} = 196~\mathrm{GPa}\) and
+\(B_{\mathrm{NiO}} = 184~\mathrm{GPa}\)), suggesting comparable
 incompressibilities.  However, NiO has a slightly higher shear modulus
-(\(G_{\mathrm{NiO}} = 102.26~\mathrm{GPa}\) vs.\ \(G_{\mathrm{Ni}} = 94.72~\mathrm{GPa}\)),
+(\(G_{\mathrm{NiO}} = 102~\mathrm{GPa}\) vs.\ \(G_{\mathrm{Ni}} = 95~\mathrm{GPa}\)),
 making it somewhat stiffer against shear deformations.
 
 The Young's modulus and Poisson's ratio are useful engineering parameters for
 small deformations.  Both materials show positive Poisson ratios in the range
 0.27--0.29, which is typical for cubic and rocksalt systems.  The higher Young's
-modulus of NiO (\(E = 258.88~\mathrm{GPa}\) vs.\ \(E = 244.72~\mathrm{GPa}\) for
-Ni) is consistent with the somewhat stiffer shear response of the ionic oxide.
+modulus of NiO (\(E = 259~\mathrm{GPa}\) vs.\ \(E = 245~\mathrm{GPa}\) for Ni)
+is consistent with the somewhat stiffer shear response of the ionic oxide.
 At the same time, the bulk modulus is not larger for NiO in this calculation,
 so the result should be interpreted more specifically: NiO resists shape change
 slightly more strongly, while Ni is marginally less compressible.
@@ -150,6 +150,21 @@ and \(0.85\) for NiO, so neither material is perfectly elastically isotropic in
 the cubic approximation.  This is normal for single crystals; the
 Voigt--Reuss--Hill values reported above are therefore best understood as
 polycrystalline averages derived from the single-crystal elastic tensor.
+
+Compared with experimental and tabulated single-crystal data, the elastic
+constants have the right order of magnitude but should not be overinterpreted.
+For Ni, room-temperature handbooks give roughly \(C_{11}=247~\mathrm{GPa}\),
+\(C_{12}=147~\mathrm{GPa}\), and \(C_{44}=125~\mathrm{GPa}\)
+\cite{simmons-wang}.  The present PBE values are slightly higher, especially
+\(C_{11}\), which is consistent with comparing a static 0 K DFT calculation
+with finite-temperature experimental elastic constants.  For NiO, literature
+values are more sensitive to temperature, magnetic order, and the treatment of
+correlation, but tabulated and theoretical results place \(C_{11}\) in the
+few-hundred-GPa range and \(C_{12}\), \(C_{44}\) near
+\(10^2~\mathrm{GPa}\) \cite{simmons-wang,dudarev,mp-nio}.  The calculated
+DFT+\(U\) NiO tensor is therefore physically plausible, although the
+\(C_{11}\) value should be checked with larger-cell and stricter magnetic
+convergence tests before being quoted as a quantitative prediction.
 
 The elastic constant tensor for Ni shows the expected cubic symmetry with
 negligible off-diagonal components, confirming that the relaxed ferromagnetic

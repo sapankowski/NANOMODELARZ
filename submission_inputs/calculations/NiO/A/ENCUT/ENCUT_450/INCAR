@@ -1,0 +1,38 @@
+SYSTEM = rocksalt NiO AFM DFT+U static convergence
+
+ISTART = 0
+ICHARG = 2
+
+PREC   = Accurate
+ENCUT  = 450
+EDIFF  = 1E-7
+NELM   = 200
+NELMIN = 6
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+
+ISPIN  = 2
+# AFM-II NiO cell: two Ni sites with opposite moments, followed by two O sites.
+MAGMOM = 2.0 -2.0 2*0.0
+
+LDAU      = .TRUE.
+LDAUTYPE  = 2
+LDAUL     = 2 -1
+LDAUU     = 7.2 0.0
+LDAUJ     = 1.0 0.0
+LDAUPRINT = 1
+LMAXMIX   = 4
+
+AMIX      = 0.2
+BMIX      = 0.00001
+AMIX_MAG  = 0.8
+BMIX_MAG  = 0.00001
+
+IBRION = -1
+NSW    = 0
+
+ISMEAR = -5
+
+LORBIT = 11
+LWAVE  = .FALSE.
+LCHARG = .FALSE.

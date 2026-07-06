@@ -1,0 +1,28 @@
+SYSTEM = Ni_PBE_FM finite-difference phonons
+
+ISTART = 0
+ICHARG = 2
+
+PREC   = Accurate
+ENCUT  = 520
+EDIFF  = 1E-8
+NELM   = 240
+LREAL  = .FALSE.
+LASPH  = .TRUE.
+ADDGRID = .FALSE.
+
+ISPIN  = 2
+MAGMOM = 8*0.6
+
+ISMEAR = 1
+SIGMA  = 0.10
+
+LWAVE  = .FALSE.
+LCHARG = .FALSE.
+
+IBRION = 5
+NFREE  = 2
+POTIM  = 0.015
+NSW    = 1
+ISIF   = 2
+ISYM   = 0

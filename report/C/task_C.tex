@@ -87,22 +87,21 @@ the qualitative comparison required here.
 from the dense uniform-mesh \texttt{dos/EIGENVAL} files, while the dominant
 orbital characters were estimated from the PDOS within
 \(\pm0.5~\mathrm{eV}\) of the Fermi level.}
+\label{tab:task-c-summary}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llllrl}
 \toprule
 System & Case & Character & Gap type & Gap (eV) & Dominant orbitals near \(E_F\) \\
 \midrule
-Ni  & PBE FM          & metallic   & metallic & 0.0002 & Ni \(d\), Ni \(p\), Ni \(s\) \\
-NiO & PBE AFM-II      & insulating & indirect & 0.5970 & Ni \(d\), O \(p\), Ni \(p\) \\
-NiO & DFT+\(U\) AFM-II & insulating & indirect & 3.4034 & O \(p\), Ni \(d\), Ni \(p\) \\
+Ni  & PBE FM          & metallic   & metallic & 0.000 & Ni \(d\), Ni \(p\), Ni \(s\) \\
+NiO & PBE AFM-II      & insulating & indirect & 0.597 & Ni \(d\), O \(p\), Ni \(p\) \\
+NiO & DFT+\(U\) AFM-II & insulating & indirect & 3.403 & O \(p\), Ni \(d\), Ni \(p\) \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
-The tiny \(0.0002~\mathrm{eV}\) occupied/unoccupied separation reported for Ni
-is only a numerical consequence of finite k-point sampling and should be
-interpreted as zero gap.  The band structure and DOS show bands crossing the
+The band structure and DOS show bands crossing the
 Fermi level, as expected for metallic ferromagnetic Ni.  The DOS near
 \(E_F\) is dominated by Ni \(3d\) character, with smaller Ni \(p\) and \(s\)
 contributions.  This is consistent with Ni being a transition metal whose
@@ -129,6 +128,19 @@ more charge-transfer-like.  This interpretation is consistent with the
 Zaanen-Sawatzky-Allen picture, in which NiO is not a simple one-electron band
 insulator but has mixed charge-transfer and Mott-Hubbard character
 \cite{zaanen-sawatzky-allen,sawatzky-allen-nio}.
+
+The band-edge positions confirm the gap assignment.  In the DFT+\(U\) NiO band
+structure of Fig.~\ref{fig:task-c-nio-dftu-bands}, the valence-band maximum is
+at \(Z\), with \(E_{\mathrm{VBM}}-E_F=-0.006~\mathrm{eV}\), and the
+conduction-band minimum is at \(\Gamma\), with
+\(E_{\mathrm{CBM}}-E_F=3.397~\mathrm{eV}\).  The resulting indirect
+\(Z\rightarrow\Gamma\) gap is therefore \(3.403~\mathrm{eV}\), the same value
+as the DOS-mesh gap in the last row of Table~\ref{tab:task-c-summary}.  This
+agreement shows that the plotted band structure contains the same VBM and CBM
+identified from the denser DOS calculation.  For comparison, the dense-mesh PBE
+NiO extrema are away from the manually plotted high-symmetry line, which is why
+the DOS-mesh value in Table~\ref{tab:task-c-summary} is used for the final PBE
+gap.
 
 \begin{figure}[htbp]
 \centering

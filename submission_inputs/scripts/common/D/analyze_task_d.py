@@ -1,0 +1,576 @@
+#!/usr/bin/env python3
+"""Analyze Task D phonon outputs and create phonon plots."""
+
+from __future__ import annotations
+
+import csv
+import math
+import re
+import shutil
+import subprocess
+from html import escape
+from pathlib import Path
+
+from prepare_task_d import CASES, ROOT
+
+
+OUTPUT_DIR = ROOT / "outputs" / "D"
+CALC_DIR = OUTPUT_DIR / "calculations"
+REPORT_DIR = OUTPUT_DIR / "reports"
+FIGURE_DIR = OUTPUT_DIR / "figures"
+
+MODE_RE = re.compile(
+    r"^\s*(\d+)\s+(f\/i|f)\s*=\s*([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+THz"
+    r".*?([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+cm-1"
+    r"\s+([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+meV",
+    re.M,
+)
+FLOAT_RE = re.compile(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[Ee][-+]?\d+)?")
+QPATH_RE = re.compile(
+    r"^\s*(\d+)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s*$"
+)
+BRANCH_RE = re.compile(
+    r"^\s*(\d+)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)\s*$"
+)
+
+
+def calc_case(case: dict, step: str) -> Path:
+    return CALC_DIR / case["case_dir"].relative_to(ROOT) / step
+
+
+def read_text(path: Path) -> str:
+    return path.read_text(errors="ignore") if path.exists() else ""
+
+
+def parse_mode_lines(text: str) -> list[dict[str, float | int | bool]]:
+    modes = []
+    for match in MODE_RE.finditer(text):
+        imaginary = match.group(2) == "f/i"
+        thz = float(match.group(3))
+        cm1 = float(match.group(4))
+        mev = float(match.group(5))
+        if imaginary:
+            thz = -abs(thz)
+            cm1 = -abs(cm1)
+            mev = -abs(mev)
+        modes.append(
+            {
+                "mode": int(match.group(1)),
+                "thz": thz,
+                "cm1": cm1,
+                "mev": mev,
+                "imaginary": imaginary,
+            }
+        )
+    return modes
+
+
+def parse_branch_frequency(line: str) -> dict[str, float | int | bool] | None:
+    match = BRANCH_RE.match(line)
+    if not match:
+        return None
+    thz = float(match.group(2))
+    return {
+        "mode": int(match.group(1)),
+        "thz": thz,
+        "cm1": float(match.group(4)),
+        "mev": float(match.group(5)),
+        "imaginary": thz < 0.0,
+    }
+
+
+def expected_qpoints(qpoints: Path) -> int | None:
+    if not qpoints.exists():
+        return None
+    lines = qpoints.read_text(errors="ignore").splitlines()
+    if len(lines) < 5 or "line" not in lines[2].lower():
+        return None
+    try:
+        points_per_segment = int(lines[1].split()[0])
+    except (IndexError, ValueError):
+        return None
+    labels = [line for line in lines[4:] if "!" in line]
+    return (len(labels) // 2) * points_per_segment
+
+
+def qpoint_path(qpoints: Path) -> tuple[list[float], list[tuple[float, str]]]:
+    if not qpoints.exists():
+        return [], []
+    lines = qpoints.read_text(errors="ignore").splitlines()
+    try:
+        points_per_segment = int(lines[1].split()[0])
+    except (IndexError, ValueError):
+        points_per_segment = 40
+
+    labeled_points: list[tuple[str, tuple[float, float, float]]] = []
+    for line in lines[4:]:
+        if "!" not in line:
+            continue
+        left, label = line.split("!", 1)
+        values = [float(value) for value in left.split()[:3]]
+        labeled_points.append((label.strip().replace("Gamma", "G"), tuple(values)))
+
+    x_values: list[float] = []
+    ticks: list[tuple[float, str]] = []
+    distance = 0.0
+    for segment_index in range(0, len(labeled_points), 2):
+        if segment_index + 1 >= len(labeled_points):
+            break
+        start_label, start = labeled_points[segment_index]
+        end_label, end = labeled_points[segment_index + 1]
+        if not x_values:
+            ticks.append((0.0, start_label))
+        step = math.sqrt(sum((a - b) ** 2 for a, b in zip(start, end)))
+        for point_index in range(points_per_segment):
+            fraction = point_index / max(points_per_segment - 1, 1)
+            x_values.append(distance + step * fraction)
+        distance += step
+        if ticks and abs(ticks[-1][0] - distance) < 1e-8:
+            if end_label not in ticks[-1][1].split("/"):
+                ticks[-1] = (ticks[-1][0], f"{ticks[-1][1]}/{end_label}")
+        else:
+            ticks.append((distance, end_label))
+    return x_values, ticks
+
+
+def qpoint_labels(qpoints: Path) -> tuple[int, list[str]]:
+    if not qpoints.exists():
+        return 0, []
+    lines = qpoints.read_text(errors="ignore").splitlines()
+    try:
+        points_per_segment = int(lines[1].split()[0])
+    except (IndexError, ValueError):
+        points_per_segment = 0
+    labels = []
+    for line in lines[4:]:
+        if "!" in line:
+            labels.append(line.split("!", 1)[1].strip().replace("Gamma", "G"))
+    return points_per_segment, labels
+
+
+def qpoint_ticks_from_lengths(qpoints: Path, lengths: list[float]) -> list[tuple[float, str]]:
+    points_per_segment, labels = qpoint_labels(qpoints)
+    if not points_per_segment or not labels:
+        return []
+    ticks: list[tuple[float, str]] = []
+    segment_count = len(labels) // 2
+    for segment_index in range(segment_count):
+        start_label = labels[2 * segment_index]
+        end_label = labels[2 * segment_index + 1]
+        start_index = segment_index * points_per_segment
+        end_index = min(start_index + points_per_segment - 1, len(lengths) - 1)
+        if start_index >= len(lengths):
+            break
+        if not ticks:
+            ticks.append((lengths[start_index], start_label))
+        if ticks and abs(ticks[-1][0] - lengths[end_index]) < 1e-8:
+            if end_label not in ticks[-1][1].split("/"):
+                ticks[-1] = (ticks[-1][0], f"{ticks[-1][1]}/{end_label}")
+        else:
+            ticks.append((lengths[end_index], end_label))
+    return ticks
+
+
+def parse_qpath_lengths(path: Path) -> list[float]:
+    lines = read_text(path / "OUTCAR").splitlines()
+    lengths: list[float] = []
+    expecting_coordinates = False
+    for line in lines:
+        if re.match(r"\s*q-point No\.", line):
+            expecting_coordinates = True
+            continue
+        if expecting_coordinates:
+            match = QPATH_RE.match(line)
+            if match:
+                lengths.append(float(match.group(5)))
+                expecting_coordinates = False
+            elif line.strip():
+                expecting_coordinates = False
+    return lengths
+
+
+def parse_dispersion(path: Path) -> list[list[dict[str, float | int | bool]]]:
+    text = read_text(path / "OUTCAR")
+    if not text:
+        return []
+
+    q_blocks_from_branches: list[list[dict[str, float | int | bool]]] = []
+    current_branch_block: list[dict[str, float | int | bool]] = []
+    reading_branch_frequencies = False
+    for line in text.splitlines():
+        if re.match(r"\s*q-point No\.", line):
+            if current_branch_block:
+                q_blocks_from_branches.append(current_branch_block)
+            current_branch_block = []
+            reading_branch_frequencies = False
+            continue
+        if "branch index" in line and "f[THz]" in line:
+            reading_branch_frequencies = True
+            continue
+        if reading_branch_frequencies:
+            mode = parse_branch_frequency(line)
+            if mode:
+                current_branch_block.append(mode)
+            elif line.strip():
+                reading_branch_frequencies = False
+    if current_branch_block:
+        q_blocks_from_branches.append(current_branch_block)
+    if q_blocks_from_branches:
+        return q_blocks_from_branches
+
+    q_blocks: list[list[dict[str, float | int | bool]]] = []
+    current: list[str] = []
+    in_q_block = False
+    for line in text.splitlines():
+        if "q-point" in line.lower() and FLOAT_RE.search(line):
+            if current:
+                modes = parse_mode_lines("\n".join(current))
+                if modes:
+                    q_blocks.append(modes)
+            current = []
+            in_q_block = True
+        elif in_q_block:
+            current.append(line)
+    if current:
+        modes = parse_mode_lines("\n".join(current))
+        if modes:
+            q_blocks.append(modes)
+    if q_blocks:
+        return q_blocks
+
+    modes = parse_mode_lines(text)
+    npoints = expected_qpoints(path / "QPOINTS")
+    if npoints and modes and len(modes) % npoints == 0:
+        modes_per_q = len(modes) // npoints
+        return [modes[index : index + modes_per_q] for index in range(0, len(modes), modes_per_q)]
+    return []
+
+
+def parse_gamma_modes(case: dict) -> list[dict[str, float | int | bool]]:
+    dispersion = parse_dispersion(calc_case(case, "dispersion"))
+    if dispersion:
+        return dispersion[0]
+    return parse_mode_lines(read_text(calc_case(case, "force_constants") / "OUTCAR"))
+
+
+def parse_incar_float(path: Path, tag: str, default: float) -> float:
+    pattern = re.compile(rf"^\s*{re.escape(tag)}\s*=\s*([-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?)", re.I)
+    for line in read_text(path / "INCAR").splitlines():
+        match = pattern.match(line)
+        if match:
+            return float(match.group(1))
+    return default
+
+
+def parse_incar_int(path: Path, tag: str, default: int) -> int:
+    pattern = re.compile(rf"^\s*{re.escape(tag)}\s*=\s*(\d+)", re.I)
+    for line in read_text(path / "INCAR").splitlines():
+        match = pattern.match(line)
+        if match:
+            return int(match.group(1))
+    return default
+
+
+def parse_qpoint_weights(lines: list[str]) -> list[float]:
+    weights: list[float] = []
+    in_weights = False
+    for line in lines:
+        if "Coordinates" in line and "Weight" in line:
+            in_weights = True
+            continue
+        if not in_weights:
+            continue
+        values = [float(value) for value in FLOAT_RE.findall(line)]
+        if len(values) == 4:
+            weights.append(values[3])
+        elif weights:
+            break
+    return weights
+
+
+def write_dos_csv(case: dict, dos: list[tuple[float, float]]) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    output = REPORT_DIR / f"{case['key']}_phdos.csv"
+    with output.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["frequency_thz", "phdos_modes_per_thz"])
+        writer.writerows((f"{freq:.8f}", f"{density:.10f}") for freq, density in dos)
+
+
+def write_dispersion_csv(case: dict, x_values: list[float], q_blocks: list[list[dict[str, float | int | bool]]]) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    output = REPORT_DIR / f"{case['key']}_phonon_dispersion.csv"
+    max_branches = max((len(block) for block in q_blocks), default=0)
+    headers = ["q_index", "q_path_length"] + [f"branch_{index}_thz" for index in range(1, max_branches + 1)]
+    with output.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(headers)
+        for q_index, (x_value, modes) in enumerate(zip(x_values, q_blocks), start=1):
+            row = [q_index, f"{x_value:.8f}"]
+            row.extend(f"{float(mode['thz']):.8f}" for mode in modes)
+            row.extend("" for _ in range(max_branches - len(modes)))
+            writer.writerow(row)
+
+
+def parse_dos(path: Path) -> list[tuple[float, float]]:
+    lines = read_text(path / "OUTCAR").splitlines()
+    if not lines:
+        return []
+
+    q_blocks = parse_dispersion(path)
+    if not q_blocks:
+        return []
+    weights = parse_qpoint_weights(lines)
+    if len(weights) != len(q_blocks):
+        weights = [1.0] * len(q_blocks)
+
+    weighted_frequencies: list[tuple[float, float]] = []
+    total_weight = sum(weights) or float(len(weights))
+    for q_weight, modes in zip(weights, q_blocks):
+        normalized_weight = q_weight / total_weight
+        for mode in modes:
+            weighted_frequencies.append((float(mode["thz"]), normalized_weight))
+    if not weighted_frequencies:
+        return []
+
+    sigma = parse_incar_float(path, "PHON_SIGMA", 0.10)
+    nedos = max(parse_incar_int(path, "PHON_NEDOS", 1200), 100)
+    min_freq = min(freq for freq, _weight in weighted_frequencies)
+    max_freq = max(freq for freq, _weight in weighted_frequencies)
+    xmin = min(0.0, min_freq - 4.0 * sigma)
+    xmax = max_freq + 4.0 * sigma
+    if xmax <= xmin:
+        xmax = xmin + 1.0
+    step = (xmax - xmin) / (nedos - 1)
+    prefactor = 1.0 / (sigma * math.sqrt(2.0 * math.pi))
+    densities = [0.0] * nedos
+
+    for freq, weight in weighted_frequencies:
+        start = max(0, int((freq - 4.0 * sigma - xmin) / step))
+        stop = min(nedos - 1, int((freq + 4.0 * sigma - xmin) / step) + 1)
+        for index in range(start, stop + 1):
+            x = xmin + index * step
+            delta = (x - freq) / sigma
+            densities[index] += weight * prefactor * math.exp(-0.5 * delta * delta)
+
+    target_area = sum(weight for _freq, weight in weighted_frequencies)
+    area = sum((densities[index] + densities[index + 1]) * 0.5 * step for index in range(nedos - 1))
+    if area > 0:
+        densities = [density * target_area / area for density in densities]
+    return [(xmin + index * step, density) for index, density in enumerate(densities)]
+
+
+def scale(value: float, source_min: float, source_max: float, target_min: float, target_max: float) -> float:
+    if source_max == source_min:
+        return (target_min + target_max) / 2.0
+    return target_min + (value - source_min) * (target_max - target_min) / (source_max - source_min)
+
+
+def svg_header(width: int, height: int, title: str) -> list[str]:
+    return [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        "<style>",
+        "text { font-family: Arial, sans-serif; fill: #222; }",
+        ".title { font-size: 21px; font-weight: 700; }",
+        ".label { font-size: 13px; }",
+        ".tick { font-size: 11px; fill: #444; }",
+        ".axis { stroke: #333; stroke-width: 1.2; fill: none; }",
+        ".grid { stroke: #d4d4d4; stroke-dasharray: 2 4; stroke-width: 1; }",
+        ".qline { stroke: #777; stroke-dasharray: 4 5; stroke-width: 1; }",
+        ".branch { fill: none; stroke: #1f77b4; stroke-width: 1.35; }",
+        ".zero { stroke: #d62728; stroke-width: 1.2; stroke-dasharray: 5 4; }",
+        ".dos { fill: none; stroke: #2ca02c; stroke-width: 1.8; }",
+        "</style>",
+        '<rect width="100%" height="100%" fill="white"/>',
+        f'<text x="{width / 2}" y="30" text-anchor="middle" class="title">{escape(title)}</text>',
+    ]
+
+
+def polyline(points: list[tuple[float, float]], cls: str) -> str:
+    coords = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+    return f'<polyline points="{coords}" class="{cls}"/>'
+
+
+def plot_dispersion(case: dict) -> Path | None:
+    q_blocks = parse_dispersion(calc_case(case, "dispersion"))
+    if not q_blocks:
+        return None
+    dispersion_dir = calc_case(case, "dispersion")
+    qpoints_file = dispersion_dir / "QPOINTS"
+    x_values = parse_qpath_lengths(dispersion_dir)
+    ticks = qpoint_ticks_from_lengths(qpoints_file, x_values)
+    if len(x_values) != len(q_blocks):
+        x_values, ticks = qpoint_path(qpoints_file)
+    if not x_values:
+        x_values = list(range(len(q_blocks)))
+        ticks = [(0.0, "G"), (float(len(q_blocks) - 1), "")]
+    point_count = min(len(x_values), len(q_blocks))
+    q_blocks = q_blocks[:point_count]
+    x_values = x_values[:point_count]
+    write_dispersion_csv(case, x_values, q_blocks)
+
+    branches = list(zip(*[[float(mode["thz"]) for mode in modes] for modes in q_blocks]))
+    all_freqs = [freq for branch in branches for freq in branch]
+    ymin = min(min(all_freqs), 0.0)
+    ymax = max(max(all_freqs), 1e-6)
+    padding = max((ymax - ymin) * 0.08, 0.2)
+    ymin -= padding
+    ymax += padding
+
+    output = FIGURE_DIR / f"{case['key']}_phonon_dispersion.svg"
+    width, height = 780, 500
+    left, right, top, bottom = 82, 730, 60, 420
+    xmax = max(x_values) if x_values else 1.0
+    parts = svg_header(width, height, f"{case['key']} phonon dispersion")
+    parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
+    for index in range(1, 5):
+        tick = ymin + (ymax - ymin) * index / 5.0
+        y = scale(tick, ymin, ymax, bottom, top)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" class="grid"/>')
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{tick:.1f}</text>')
+    zero_y = scale(0.0, ymin, ymax, bottom, top)
+    parts.append(f'<line x1="{left}" y1="{zero_y:.1f}" x2="{right}" y2="{zero_y:.1f}" class="zero"/>')
+    for tick_value, label in ticks:
+        x = scale(tick_value, 0, xmax, left, right)
+        parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{bottom}" class="qline"/>')
+        parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{escape(label)}</text>')
+    for branch in branches:
+        points = [(scale(x, 0, xmax, left, right), scale(freq, ymin, ymax, bottom, top)) for x, freq in zip(x_values, branch)]
+        parts.append(polyline(points, "branch"))
+    parts.append(f'<text x="{(left+right)/2}" y="465" text-anchor="middle" class="label">High-symmetry q-path</text>')
+    parts.append('<text x="24" y="250" text-anchor="middle" class="label" transform="rotate(-90 24 250)">Frequency (THz)</text>')
+    parts.append("</svg>")
+    output.write_text("\n".join(parts) + "\n")
+    return output
+
+
+def plot_dos(case: dict) -> Path | None:
+    dos = parse_dos(calc_case(case, "dos"))
+    if not dos:
+        return None
+    write_dos_csv(case, dos)
+    frequencies = [row[0] for row in dos]
+    densities = [row[1] for row in dos]
+    output = FIGURE_DIR / f"{case['key']}_phdos.svg"
+    width, height = 760, 460
+    left, right, top, bottom = 82, 710, 60, 390
+    xmin, xmax = min(frequencies), max(frequencies)
+    ymin, ymax = 0.0, max(densities) if densities else 1.0
+    ymax = max(ymax, 1e-9)
+    parts = svg_header(width, height, f"{case['key']} phonon DOS")
+    parts.append(f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" class="axis"/>')
+    x_tick_count = 6
+    for index in range(x_tick_count):
+        tick = xmin + (xmax - xmin) * index / (x_tick_count - 1)
+        x = scale(tick, xmin, xmax, left, right)
+        parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{bottom}" class="grid"/>')
+        parts.append(f'<text x="{x:.1f}" y="{bottom + 18}" text-anchor="middle" class="tick">{tick:.1f}</text>')
+    for index in range(1, 5):
+        tick = ymax * index / 4.0
+        y = scale(tick, ymin, ymax, bottom, top)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" class="grid"/>')
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{tick:.1f}</text>')
+    parts.append(polyline([(scale(x, xmin, xmax, left, right), scale(y, ymin, ymax, bottom, top)) for x, y in dos], "dos"))
+    parts.append(f'<text x="{(left+right)/2}" y="430" text-anchor="middle" class="label">Frequency (THz)</text>')
+    parts.append('<text x="24" y="230" text-anchor="middle" class="label" transform="rotate(-90 24 230)">PhDOS</text>')
+    parts.append("</svg>")
+    output.write_text("\n".join(parts) + "\n")
+    return output
+
+
+def write_tables(summary_rows: list[dict[str, str]], mode_rows: list[dict[str, str]]) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, rows in (
+        ("Task_D_summary_table", summary_rows),
+        ("Task_D_gamma_modes", mode_rows),
+    ):
+        if not rows:
+            continue
+        with (REPORT_DIR / f"{filename}.csv").open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        headers = list(rows[0])
+        lines = [
+            "| " + " | ".join(headers) + " |",
+            "| " + " | ".join("---" for _ in headers) + " |",
+        ]
+        for row in rows:
+            lines.append("| " + " | ".join(row[header] for header in headers) + " |")
+        (REPORT_DIR / f"{filename}.md").write_text("\n".join(lines) + "\n")
+
+
+def convert_svg_figures(figures: list[Path]) -> list[Path]:
+    converter = shutil.which("rsvg-convert")
+    if converter is None:
+        return []
+    report_figure_dir = ROOT / "report" / "figures"
+    report_figure_dir.mkdir(parents=True, exist_ok=True)
+    outputs = []
+    for figure in figures:
+        pdf = report_figure_dir / figure.with_suffix(".pdf").name
+        subprocess.run([converter, "-f", "pdf", "-o", str(pdf), str(figure)], check=True)
+        outputs.append(pdf)
+    return outputs
+
+
+def main() -> None:
+    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+    summary_rows: list[dict[str, str]] = []
+    mode_rows: list[dict[str, str]] = []
+    figures: list[Path] = []
+
+    for case in CASES:
+        gamma_modes = parse_gamma_modes(case)
+        imaginary_count = sum(1 for mode in gamma_modes if bool(mode["imaginary"]) and abs(float(mode["thz"])) > 0.05)
+        stable = "pending" if not gamma_modes else ("no" if imaginary_count else "yes")
+        min_frequency = min((float(mode["thz"]) for mode in gamma_modes), default=None)
+        summary_rows.append(
+            {
+                "System": case["system"],
+                "Case": case["key"],
+                "Gamma modes found": str(len(gamma_modes)) if gamma_modes else "pending",
+                "Lowest Gamma frequency, THz": "pending" if min_frequency is None else f"{min_frequency:.4f}",
+                "Imaginary modes": "pending" if not gamma_modes else str(imaginary_count),
+                "Dynamically stable?": stable,
+            }
+        )
+        for mode in gamma_modes:
+            mode_rows.append(
+                {
+                    "System": case["system"],
+                    "Case": case["key"],
+                    "Mode": str(mode["mode"]),
+                    "Frequency, THz": f"{float(mode['thz']):.6f}",
+                    "Frequency, cm^-1": f"{float(mode['cm1']):.3f}",
+                    "Imaginary?": "yes" if mode["imaginary"] else "no",
+                    "Dynamically stable?": "no" if mode["imaginary"] else "yes",
+                }
+            )
+        for figure in (plot_dispersion(case), plot_dos(case)):
+            if figure is not None:
+                figures.append(figure)
+
+    write_tables(summary_rows, mode_rows)
+    print(f"Wrote {REPORT_DIR / 'Task_D_summary_table.md'}")
+    if mode_rows:
+        print(f"Wrote {REPORT_DIR / 'Task_D_gamma_modes.md'}")
+    if figures:
+        print("Wrote figures: " + ", ".join(str(path.relative_to(ROOT)) for path in figures))
+        pdfs = convert_svg_figures(figures)
+        if pdfs:
+            print("Wrote report PDFs: " + ", ".join(str(path.relative_to(ROOT)) for path in pdfs))
+    else:
+        print("No phonon figures written yet; run the Task D VASP jobs first.")
+
+
+if __name__ == "__main__":
+    main()
